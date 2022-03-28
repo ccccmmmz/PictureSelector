@@ -1,19 +1,19 @@
-# PictureSelector 3.0 
+# PictureSelector 3.0
    A PictureSelector for Android platform, which supports obtaining pictures, videos, audio & photos from photo albums, cutting (single picture or multi picture cutting), compression, theme custom configuration and other functions, and supports dynamic access & an open source picture selection framework suitable for Android 5.0 + system<br>
    
    ![](image/picture_framework_es.png)
    
    [简体中文🇨🇳](README_CN.md)
 
-   [Download Demo Apk](https://github.com/LuckSiege/PictureSelector/raw/version_component/app/demo/demo_2022-03-20_083325_v3.0.7.apk)<br>
+   [Download Demo Apk](https://github.com/LuckSiege/PictureSelector/raw/version_component/app/demo/demo_2022-03-27_085616_v3.0.8.apk)<br>
 
-[![Maven Central](https://img.shields.io/badge/maven%20central-v3.0.7-yellow)](https://github.com/LuckSiege)
+[![Maven Central](https://img.shields.io/badge/maven%20central-v3.0.8-yellow)](https://github.com/LuckSiege)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](https://github.com/LuckSiege)
 [![Star](https://img.shields.io/github/stars/LuckSiege/PictureSelector.svg)](https://github.com/LuckSiege/PictureSelector)
 
 
 ## Contents
--[Last version](https://github.com/LuckSiege/PictureSelector/releases/tag/v3.0.7)<br>
+-[Last version](https://github.com/LuckSiege/PictureSelector/releases/tag/v3.0.8)<br>
 -[Download](#Download)<br>
 -[Usage](#Usage)<br>
 -[Permission](#Permission)<br>
@@ -37,16 +37,16 @@ repositories {
 
 dependencies {
   // PictureSelector basic (Necessary)
-  implementation 'io.github.lucksiege:pictureselector:v3.0.7'
+  implementation 'io.github.lucksiege:pictureselector:v3.0.8'
 
   // image compress library (Not necessary)
-  implementation 'io.github.lucksiege:compress:v3.0.7'
+  implementation 'io.github.lucksiege:compress:v3.0.8'
 
   // uCrop library (Not necessary)
-  implementation 'io.github.lucksiege:ucrop:v3.0.7'
+  implementation 'io.github.lucksiege:ucrop:v3.0.8'
 
   // simple camerax library (Not necessary)
-  implementation 'io.github.lucksiege:camerax:v3.0.7'
+  implementation 'io.github.lucksiege:camerax:v3.0.8'
 }
 ```
 
@@ -56,25 +56,25 @@ Or Maven:
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>pictureselector</artifactId>
-  <version>v3.0.7</version>
+  <version>v3.0.8</version>
 </dependency>
 
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>compress</artifactId>
-  <version>v3.0.7</version>
+  <version>v3.0.8</version>
 </dependency>
 
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>ucrop</artifactId>
-  <version>v3.0.7</version>
+  <version>v3.0.8</version>
 </dependency>
 
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>camerax</artifactId>
-  <version>v3.0.7</version>
+  <version>v3.0.8</version>
 </dependency>
 ```
 
@@ -269,6 +269,12 @@ IBridgeMediaLoader loader = PictureSelector.create(this)
 ```
 
 5、Preview image、video、audio
+
+If you preview the online video AndroidManifest XML add the following code
+
+```sh
+android:usesCleartextTraffic="true"
+```
 
 ```sh
 

@@ -279,8 +279,8 @@ public class MainActivity extends AppCompatActivity implements IBridgePictureBeh
         launcherResult = createActivityResultLauncher();
 
 //        List<LocalMedia> list = new ArrayList<>();
-//        list.add(LocalMedia.generateLocalMedia("https://wx1.sinaimg.cn/mw2000/0073ozWdly1h0afoey03qj30u05mh1kx.jpg", PictureMimeType.ofJPEG()));
-//        list.add(LocalMedia.generateLocalMedia("https://wx4.sinaimg.cn/mw2000/0073ozWdly1h0afofvyc8j30u05qk1kx.jpg", PictureMimeType.ofJPEG()));
+//        list.add(LocalMedia.generateLocalMedia("https://fdfs.test-kepu.weiyilewen.com/group1/M00/00/01/wKhkY2Iv936EMKWzAAAAAHuLNY8762.mp4", PictureMimeType.ofMP4()));
+//        list.add(LocalMedia.generateLocalMedia("http:/125.124.10.5:81/dfs2/group1/M00/0E/31/CtosLGI0V5aACBl9AFZJdmcSWKg004.mp4", PictureMimeType.ofMP4()));
 //        list.add(LocalMedia.generateLocalMedia("https://wx1.sinaimg.cn/mw2000/0073ozWdly1h0afogn4vij30u05keb29.jpg", PictureMimeType.ofJPEG()));
 //        list.add(LocalMedia.generateLocalMedia("https://wx3.sinaimg.cn/mw2000/0073ozWdly1h0afohdkygj30u05791kx.jpg", PictureMimeType.ofJPEG()));
 //        list.add(LocalMedia.generateLocalMedia("https://wx2.sinaimg.cn/mw2000/0073ozWdly1h0afoi70m2j30u05fq1kx.jpg", PictureMimeType.ofJPEG()));
@@ -883,7 +883,7 @@ public class MainActivity extends AppCompatActivity implements IBridgePictureBeh
         public void onDenied(Context context, String permission, int requestCode) {
             String tips;
             if (TextUtils.equals(permission, Manifest.permission.RECORD_AUDIO)) {
-                tips = "缺少录音权限\n访问您设备上的音频、媒体内容和文件";
+                tips = "缺少麦克风权限\n可能会导致录视频无法采集声音";
             } else {
                 tips = "缺少相机权限\n可能会导致不能使用摄像头功能";
             }
@@ -960,8 +960,13 @@ public class MainActivity extends AppCompatActivity implements IBridgePictureBeh
             title = "相机权限使用说明";
             explain = "相机权限使用说明\n用户app用于拍照/录视频";
         } else if (TextUtils.equals(permissionArray[0], Manifest.permission.RECORD_AUDIO)) {
-            title = "录音权限使用说明";
-            explain = "录音权限使用说明\n用户app用于采集声音";
+            if (isHasSimpleXCamera){
+                title = "麦克风权限使用说明";
+                explain = "麦克风权限使用说明\n用户app用于录视频时采集声音";
+            } else {
+                title = "录音权限使用说明";
+                explain = "录音权限使用说明\n用户app用于采集声音";
+            }
         } else {
             title = "存储权限使用说明";
             explain = "存储权限使用说明\n用户app写入/下载/保存/读取/修改/删除图片、视频、文件等信息";
