@@ -134,6 +134,7 @@ import java.util.List;
 
 import kotlinImpl.recycler_view.CommonAdapter;
 import kotlinImpl.recycler_view.ModelViewHolder;
+import kotlinImpl.recycler_view.TestRecyclerActivity;
 import top.zibin.luban.CompressionPredicate;
 import top.zibin.luban.Luban;
 import top.zibin.luban.OnCompressListener;
@@ -459,6 +460,8 @@ public class MainActivity extends AppCompatActivity implements IBridgePictureBeh
         mItemTouchHelper.attachToRecyclerView(mRecyclerView);
         // 清除缓存
 //        clearCache();
+
+        startActivity(new Intent(this, TestRecyclerActivity.class));
     }
 
     private String[] getNotSupportCrop() {

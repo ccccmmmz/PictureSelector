@@ -85,6 +85,7 @@
             android:screenOrientation="fullSensor">
 
         </activity>
+        <activity android:name="kotlinImpl.recycler_view.TestRecyclerActivity" />
     </application>
 
 </manifest>

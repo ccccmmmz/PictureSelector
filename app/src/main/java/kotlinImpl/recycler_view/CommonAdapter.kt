@@ -2,6 +2,7 @@ package kotlinImpl.recycler_view
 
 import android.util.Log
 import android.util.SparseArray
+import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.recyclerview.widget.RecyclerView
@@ -71,12 +72,36 @@ class CommonAdapter<T> : RecyclerView.Adapter<ModelViewHolder<T>>() {
         notifyItemInserted(mDataSource.size - 1)
     }
 
+    fun addData(data: Collection<T>?){
+        val appendSize = data?.size?: return
+        if (appendSize == 0) {
+            return
+        }
+        mDataSource.addAll(data)
+        notifyItemRangeInserted(mDataSource.size - appendSize, appendSize)
+    }
 
+    fun addData(data: Collection<T>?, position: Int){
+        val appendSize = data?.size?: return
+        if (appendSize == 0) {
+            return
+        }
+        mDataSource.addAll(position, data)
+        notifyItemRangeInserted(position, appendSize)
+    }
 
     fun regisModelRegistry(clazz: Class<*>, @LayoutRes layoutRes: Int) {
         mRegistryMap[clazz] = layoutRes
         mItemViewTypeMap.append(layoutRes, clazz)
     }
 
+
+    fun addHead(@LayoutRes layoutRes: Int){
+
+    }
+
+    fun addHead(view: View){
+
+    }
 
 }
