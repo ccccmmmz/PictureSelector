@@ -132,9 +132,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import kotlinImpl.recycler_view.CommonAdapter;
-import kotlinImpl.recycler_view.ModelViewHolder;
-import kotlinImpl.recycler_view.TestRecyclerActivity;
+import kotlinImpl.activityResultContract.ActivityResultContractCompat;
 import top.zibin.luban.CompressionPredicate;
 import top.zibin.luban.Luban;
 import top.zibin.luban.OnCompressListener;
@@ -185,6 +183,7 @@ public class MainActivity extends AppCompatActivity implements IBridgePictureBeh
     private int resultMode = LAUNCHER_RESULT;
     private ImageEngine imageEngine;
 
+    private ActivityResultContractCompat mActivityCompat;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -461,7 +460,8 @@ public class MainActivity extends AppCompatActivity implements IBridgePictureBeh
         // 清除缓存
 //        clearCache();
 
-        startActivity(new Intent(this, TestRecyclerActivity.class));
+        mActivityCompat = new ActivityResultContractCompat();
+
     }
 
     private String[] getNotSupportCrop() {

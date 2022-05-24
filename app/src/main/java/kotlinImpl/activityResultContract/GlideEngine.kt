@@ -1,10 +1,9 @@
-package kotlinImpl.ActivityResultContract
+package kotlinImpl.activityResultContract
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
-import android.view.View
 import android.widget.ImageView
 import androidx.annotation.DrawableRes
 import com.bumptech.glide.Glide

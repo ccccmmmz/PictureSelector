@@ -1,4 +1,4 @@
-package kotlinImpl.ActivityResultContract
+package kotlinImpl.activityResultContract
 
 class PictureKit private constructor(){
     companion object {
