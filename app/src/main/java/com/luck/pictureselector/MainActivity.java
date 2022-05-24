@@ -460,7 +460,7 @@ public class MainActivity extends AppCompatActivity implements IBridgePictureBeh
         // 清除缓存
 //        clearCache();
 
-        mActivityCompat = new ActivityResultContractCompat();
+        mActivityCompat = new ActivityResultContractCompat(this);
 
     }
 
