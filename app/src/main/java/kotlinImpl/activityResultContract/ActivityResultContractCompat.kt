@@ -34,6 +34,7 @@ class ActivityResultContractCompat(private val activityResultCaller: ActivityRes
     private val mPermissionContract by lazy { ActivityResultContracts.RequestMultiplePermissions() }
     private var mPermissionCallback : ActivityResultCallback<Map<String, Boolean>>? = null
     private var mPermissionLauncher : ActivityResultLauncher<Array<String>>? = null
+    private var mPermissionGrantEvent : PermissionGrantEvent? = null
 
     private val mImageContract by lazy { ActivityResultContracts.GetMultipleContents() }
     private var mImageSelectLaunch: ActivityResultLauncher<String?>? = null
@@ -46,23 +47,31 @@ class ActivityResultContractCompat(private val activityResultCaller: ActivityRes
 
     }
 
-    fun regisStartActivityForResultContract(activityResultCaller: ActivityResultCaller) {
+    /**
+     * activity launch result
+     */
+    private fun regisStartActivityForResultContract(activityResultCaller: ActivityResultCaller) {
         mActivityResultLauncher = activityResultCaller.registerForActivityResult(mStartActivityForResult){
             callback?.onActivityResult(it)
             callback = null
             log("regisStartActivityForResultContract execute complete")
         }
     }
-    fun regisPermissionContract(activityResultCaller: ActivityResultCaller){
+
+    /**
+     * permission check result
+     */
+    private fun regisPermissionContract(activityResultCaller: ActivityResultCaller){
         mPermissionLauncher =
             activityResultCaller.registerForActivityResult(mPermissionContract) { it ->
                 log("permission result $it")
                 //mPermissionCallback?.onActivityResult(it)
                 val iterator = it.iterator()
-                val grantList = ArrayList<String>(it.size)
+
                 val unGrantList = ArrayList<String>(it.size)
                 iterator.forEach {
                     if (!it.value) {
+                        //deny permission list
                         unGrantList.add(it.key)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             mFragmentActivity?.shouldShowRequestPermissionRationale(it.key)
@@ -70,9 +79,19 @@ class ActivityResultContractCompat(private val activityResultCaller: ActivityRes
                             //deny
                         }
                     } else {
-                        grantList.add(it.key)
+                        //grant permission list
                     }
                 }
+                //handle deny permission
+                if (unGrantList.isNotEmpty()){
+                    mPermissionGrantEvent?.onDenied()
+                    onPermissionDeny(unGrantList)
+                } else {
+                    //dispatch grant permission
+                    mPermissionGrantEvent?.onGrant()
+                }
+                //reset permission callback
+                mPermissionGrantEvent = null
             }
     }
 
@@ -83,17 +102,22 @@ class ActivityResultContractCompat(private val activityResultCaller: ActivityRes
 
     }
 
-    fun checkPermission(vararg permission: String){
+    private fun checkPermission(vararg permission: String){
         mPermissionLauncher?.launch(permission as Array<String>)
     }
 
 
 
-    fun checkStoragePermission(){
+    fun checkStoragePermission(permissionCallBack: PermissionGrantEvent? = null){
+        mPermissionGrantEvent = permissionCallBack
         checkPermission(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
     }
 
-    fun regisImageAlbumFetchContract(activityResultCaller: ActivityResultCaller){
+    private fun onPermissionDeny(denyPermissions : List<String>){
+
+    }
+
+    private fun regisImageAlbumFetchContract(activityResultCaller: ActivityResultCaller){
         mImageSelectLaunch = activityResultCaller.registerForActivityResult(mImageContract) {
             log(it?.toString().orEmpty())
         }
