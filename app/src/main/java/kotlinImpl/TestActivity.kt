@@ -3,8 +3,10 @@ package kotlinImpl
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.FragmentActivity
+import androidx.recyclerview.widget.RecyclerView
 import com.luck.pictureselector.R
 import kotlinImpl.activityResultContract.ActivityResultContractCompat
+import kotlinImpl.recycler_view.CommonAdapter
 
 class TestActivity: FragmentActivity() {
 
@@ -14,6 +16,9 @@ class TestActivity: FragmentActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_permission_test)
         mActivityContract = ActivityResultContractCompat(this)
+
+        val recyclerView = findViewById<RecyclerView>(R.id.rvTest)
+        val commonAdapter = CommonAdapter<String>()
 
     }
 
