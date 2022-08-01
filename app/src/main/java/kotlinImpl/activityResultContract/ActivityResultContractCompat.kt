@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 
+@Suppress("IMPLICIT_CAST_TO_ANY")
 class ActivityResultContractCompat(private val activityResultCaller: ActivityResultCaller) {
 
 
