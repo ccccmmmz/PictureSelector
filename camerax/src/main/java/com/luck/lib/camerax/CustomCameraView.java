@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.view.Display;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -240,7 +241,12 @@ public class CustomCameraView extends RelativeLayout implements CameraXOrientati
         mCameraPreviewView.post(new Runnable() {
             @Override
             public void run() {
-                displayId = mCameraPreviewView.getDisplay().getDisplayId();
+                if (mCameraPreviewView != null) {
+                    Display display = mCameraPreviewView.getDisplay();
+                    if (display != null) {
+                        displayId = display.getDisplayId();
+                    }
+                }
             }
         });
 

@@ -19,6 +19,7 @@ import com.luck.picture.lib.engine.VideoPlayerEngine;
 import com.luck.picture.lib.entity.LocalMedia;
 import com.luck.picture.lib.interfaces.OnBitmapWatermarkEventListener;
 import com.luck.picture.lib.interfaces.OnCameraInterceptListener;
+import com.luck.picture.lib.interfaces.OnCustomLoadingListener;
 import com.luck.picture.lib.interfaces.OnExternalPreviewEventListener;
 import com.luck.picture.lib.interfaces.OnGridItemSelectAnimListener;
 import com.luck.picture.lib.interfaces.OnInjectActivityPreviewListener;
@@ -133,10 +134,10 @@ public final class PictureSelectionConfig implements Parcelable {
     public boolean isAutoVideoPlay;
     public boolean isLoopAutoPlay;
     public boolean isFilterSizeDuration;
-    public boolean isAllFilesAccess;
     public boolean isPageSyncAsCount;
     public boolean isPauseResumePlay;
     public boolean isEnableVideoSize;
+    public boolean isOriginalSkipCompress;
 
     public static ImageEngine imageEngine;
     public static CompressEngine compressEngine;
@@ -169,6 +170,7 @@ public final class PictureSelectionConfig implements Parcelable {
     public static InterpolatorFactory interpolatorFactory;
     public static OnGridItemSelectAnimListener onItemSelectAnimListener;
     public static OnSelectAnimListener onSelectAnimListener;
+    public static OnCustomLoadingListener onCustomLoadingListener;
 
 
     private PictureSelectionConfig(Parcel in) {
@@ -253,10 +255,10 @@ public final class PictureSelectionConfig implements Parcelable {
         isAutoVideoPlay = in.readByte() != 0;
         isLoopAutoPlay = in.readByte() != 0;
         isFilterSizeDuration = in.readByte() != 0;
-        isAllFilesAccess = in.readByte() != 0;
         isPageSyncAsCount = in.readByte() != 0;
         isPauseResumePlay = in.readByte() != 0;
         isEnableVideoSize = in.readByte() != 0;
+        isOriginalSkipCompress = in.readByte() != 0;
     }
 
     @Override
@@ -342,10 +344,10 @@ public final class PictureSelectionConfig implements Parcelable {
         dest.writeByte((byte) (isAutoVideoPlay ? 1 : 0));
         dest.writeByte((byte) (isLoopAutoPlay ? 1 : 0));
         dest.writeByte((byte) (isFilterSizeDuration ? 1 : 0));
-        dest.writeByte((byte) (isAllFilesAccess ? 1 : 0));
         dest.writeByte((byte) (isPageSyncAsCount ? 1 : 0));
         dest.writeByte((byte) (isPauseResumePlay ? 1 : 0));
         dest.writeByte((byte) (isEnableVideoSize ? 1 : 0));
+        dest.writeByte((byte) (isOriginalSkipCompress ? 1 : 0));
     }
 
     @Override
@@ -448,10 +450,10 @@ public final class PictureSelectionConfig implements Parcelable {
         isAutoVideoPlay = false;
         isLoopAutoPlay = false;
         isFilterSizeDuration = true;
-        isAllFilesAccess = false;
         isPageSyncAsCount = false;
         isPauseResumePlay = false;
         isEnableVideoSize = true;
+        isOriginalSkipCompress = false;
     }
 
 
@@ -512,6 +514,7 @@ public final class PictureSelectionConfig implements Parcelable {
         PictureSelectionConfig.onItemSelectAnimListener = null;
         PictureSelectionConfig.onSelectAnimListener = null;
         PictureSelectionConfig.videoPlayerEngine = null;
+        PictureSelectionConfig.onCustomLoadingListener = null;
         PictureThreadUtils.cancel(PictureThreadUtils.getIoPool());
         SelectedManager.clearSelectResult();
         BuildRecycleItemViewParams.clear();
