@@ -4,24 +4,38 @@ import android.content.pm.ActivityInfo;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.luck.picture.lib.basic.IBridgeLoaderFactory;
+import com.luck.picture.lib.basic.IBridgeViewLifecycle;
+import com.luck.picture.lib.basic.InterpolatorFactory;
 import com.luck.picture.lib.engine.CompressEngine;
+import com.luck.picture.lib.engine.CompressFileEngine;
 import com.luck.picture.lib.engine.CropEngine;
+import com.luck.picture.lib.engine.CropFileEngine;
 import com.luck.picture.lib.engine.ExtendLoaderEngine;
 import com.luck.picture.lib.engine.ImageEngine;
 import com.luck.picture.lib.engine.SandboxFileEngine;
+import com.luck.picture.lib.engine.UriToFileTransformEngine;
+import com.luck.picture.lib.engine.VideoPlayerEngine;
 import com.luck.picture.lib.entity.LocalMedia;
+import com.luck.picture.lib.interfaces.OnBitmapWatermarkEventListener;
 import com.luck.picture.lib.interfaces.OnCameraInterceptListener;
+import com.luck.picture.lib.interfaces.OnCustomLoadingListener;
 import com.luck.picture.lib.interfaces.OnExternalPreviewEventListener;
+import com.luck.picture.lib.interfaces.OnGridItemSelectAnimListener;
+import com.luck.picture.lib.interfaces.OnInjectActivityPreviewListener;
 import com.luck.picture.lib.interfaces.OnInjectLayoutResourceListener;
 import com.luck.picture.lib.interfaces.OnMediaEditInterceptListener;
 import com.luck.picture.lib.interfaces.OnPermissionDeniedListener;
 import com.luck.picture.lib.interfaces.OnPermissionDescriptionListener;
 import com.luck.picture.lib.interfaces.OnPermissionsInterceptListener;
 import com.luck.picture.lib.interfaces.OnPreviewInterceptListener;
+import com.luck.picture.lib.interfaces.OnQueryFilterListener;
 import com.luck.picture.lib.interfaces.OnRecordAudioInterceptListener;
 import com.luck.picture.lib.interfaces.OnResultCallbackListener;
+import com.luck.picture.lib.interfaces.OnSelectAnimListener;
 import com.luck.picture.lib.interfaces.OnSelectFilterListener;
 import com.luck.picture.lib.interfaces.OnSelectLimitTipsListener;
+import com.luck.picture.lib.interfaces.OnVideoThumbnailEventListener;
 import com.luck.picture.lib.language.LanguageConfig;
 import com.luck.picture.lib.magical.BuildRecycleItemViewParams;
 import com.luck.picture.lib.manager.SelectedManager;
@@ -92,6 +106,7 @@ public final class PictureSelectionConfig implements Parcelable {
     public String originalPath;
     public String cameraPath;
     public String sortOrder;
+    public String defaultAlbumName;
     public int pageSize;
     public boolean isPageStrategy;
     public boolean isFilterInvalidFile;
@@ -110,22 +125,35 @@ public final class PictureSelectionConfig implements Parcelable {
     public boolean isActivityResultBack;
     public boolean isCompressEngine;
     public boolean isLoaderDataEngine;
+    public boolean isLoaderFactoryEngine;
     public boolean isSandboxFileEngine;
     public boolean isOriginalControl;
     public boolean isDisplayTimeAxis;
     public boolean isFastSlidingSelect;
     public boolean isSelectZoomAnim;
+    public boolean isAutoVideoPlay;
+    public boolean isLoopAutoPlay;
+    public boolean isFilterSizeDuration;
+    public boolean isPageSyncAsCount;
+    public boolean isPauseResumePlay;
+    public boolean isEnableVideoSize;
+    public boolean isOriginalSkipCompress;
 
     public static ImageEngine imageEngine;
     public static CompressEngine compressEngine;
+    public static CompressFileEngine compressFileEngine;
     public static CropEngine cropEngine;
+    public static CropFileEngine cropFileEngine;
     public static SandboxFileEngine sandboxFileEngine;
+    public static UriToFileTransformEngine uriToFileTransformEngine;
     public static ExtendLoaderEngine loaderDataEngine;
+    public static VideoPlayerEngine videoPlayerEngine;
     public static PictureSelectorStyle selectorStyle;
     public static OnCameraInterceptListener onCameraInterceptListener;
     public static OnSelectLimitTipsListener onSelectLimitTipsListener;
     public static OnResultCallbackListener<LocalMedia> onResultCallListener;
     public static OnExternalPreviewEventListener onExternalPreviewEventListener;
+    public static OnInjectActivityPreviewListener onInjectActivityPreviewListener;
     public static OnMediaEditInterceptListener onEditMediaEventListener;
     public static OnPermissionsInterceptListener onPermissionsEventListener;
     public static OnInjectLayoutResourceListener onLayoutResourceListener;
@@ -134,9 +162,18 @@ public final class PictureSelectionConfig implements Parcelable {
     public static OnPermissionDescriptionListener onPermissionDescriptionListener;
     public static OnPermissionDeniedListener onPermissionDeniedListener;
     public static OnRecordAudioInterceptListener onRecordAudioListener;
+    public static OnQueryFilterListener onQueryFilterListener;
+    public static OnBitmapWatermarkEventListener onBitmapWatermarkListener;
+    public static OnVideoThumbnailEventListener onVideoThumbnailEventListener;
+    public static IBridgeViewLifecycle viewLifecycle;
+    public static IBridgeLoaderFactory loaderFactory;
+    public static InterpolatorFactory interpolatorFactory;
+    public static OnGridItemSelectAnimListener onItemSelectAnimListener;
+    public static OnSelectAnimListener onSelectAnimListener;
+    public static OnCustomLoadingListener onCustomLoadingListener;
 
 
-    protected PictureSelectionConfig(Parcel in) {
+    private PictureSelectionConfig(Parcel in) {
         chooseMode = in.readInt();
         isOnlyCamera = in.readByte() != 0;
         isDirectReturnSingle = in.readByte() != 0;
@@ -190,6 +227,7 @@ public final class PictureSelectionConfig implements Parcelable {
         originalPath = in.readString();
         cameraPath = in.readString();
         sortOrder = in.readString();
+        defaultAlbumName = in.readString();
         pageSize = in.readInt();
         isPageStrategy = in.readByte() != 0;
         isFilterInvalidFile = in.readByte() != 0;
@@ -208,11 +246,19 @@ public final class PictureSelectionConfig implements Parcelable {
         isActivityResultBack = in.readByte() != 0;
         isCompressEngine = in.readByte() != 0;
         isLoaderDataEngine = in.readByte() != 0;
+        isLoaderFactoryEngine = in.readByte() != 0;
         isSandboxFileEngine = in.readByte() != 0;
         isOriginalControl = in.readByte() != 0;
         isDisplayTimeAxis = in.readByte() != 0;
         isFastSlidingSelect = in.readByte() != 0;
         isSelectZoomAnim = in.readByte() != 0;
+        isAutoVideoPlay = in.readByte() != 0;
+        isLoopAutoPlay = in.readByte() != 0;
+        isFilterSizeDuration = in.readByte() != 0;
+        isPageSyncAsCount = in.readByte() != 0;
+        isPauseResumePlay = in.readByte() != 0;
+        isEnableVideoSize = in.readByte() != 0;
+        isOriginalSkipCompress = in.readByte() != 0;
     }
 
     @Override
@@ -270,6 +316,7 @@ public final class PictureSelectionConfig implements Parcelable {
         dest.writeString(originalPath);
         dest.writeString(cameraPath);
         dest.writeString(sortOrder);
+        dest.writeString(defaultAlbumName);
         dest.writeInt(pageSize);
         dest.writeByte((byte) (isPageStrategy ? 1 : 0));
         dest.writeByte((byte) (isFilterInvalidFile ? 1 : 0));
@@ -288,11 +335,19 @@ public final class PictureSelectionConfig implements Parcelable {
         dest.writeByte((byte) (isActivityResultBack ? 1 : 0));
         dest.writeByte((byte) (isCompressEngine ? 1 : 0));
         dest.writeByte((byte) (isLoaderDataEngine ? 1 : 0));
+        dest.writeByte((byte) (isLoaderFactoryEngine ? 1 : 0));
         dest.writeByte((byte) (isSandboxFileEngine ? 1 : 0));
         dest.writeByte((byte) (isOriginalControl ? 1 : 0));
         dest.writeByte((byte) (isDisplayTimeAxis ? 1 : 0));
         dest.writeByte((byte) (isFastSlidingSelect ? 1 : 0));
         dest.writeByte((byte) (isSelectZoomAnim ? 1 : 0));
+        dest.writeByte((byte) (isAutoVideoPlay ? 1 : 0));
+        dest.writeByte((byte) (isLoopAutoPlay ? 1 : 0));
+        dest.writeByte((byte) (isFilterSizeDuration ? 1 : 0));
+        dest.writeByte((byte) (isPageSyncAsCount ? 1 : 0));
+        dest.writeByte((byte) (isPauseResumePlay ? 1 : 0));
+        dest.writeByte((byte) (isEnableVideoSize ? 1 : 0));
+        dest.writeByte((byte) (isOriginalSkipCompress ? 1 : 0));
     }
 
     @Override
@@ -312,7 +367,7 @@ public final class PictureSelectionConfig implements Parcelable {
         }
     };
 
-    protected void initDefaultValue() {
+    private void initDefaultValue() {
         chooseMode = SelectMimeType.ofImage();
         isOnlyCamera = false;
         selectionMode = SelectModeConfig.MULTIPLE;
@@ -325,11 +380,11 @@ public final class PictureSelectionConfig implements Parcelable {
         videoQuality = VideoQuality.VIDEO_QUALITY_HIGH;
         language = LanguageConfig.UNKNOWN_LANGUAGE;
         filterVideoMaxSecond = 0;
-        filterVideoMinSecond = 1000;
+        filterVideoMinSecond = 0;
         selectMaxDurationSecond = 0;
         selectMinDurationSecond = 0;
         filterMaxFileSize = 0;
-        filterMinFileSize = 1024;
+        filterMinFileSize = 0;
         selectMaxFileSize = 0;
         selectMinFileSize = 0;
         recordVideoMaxSecond = 60;
@@ -375,11 +430,12 @@ public final class PictureSelectionConfig implements Parcelable {
         ofAllCameraType = SelectMimeType.ofAll();
         isOnlySandboxDir = false;
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
-        isCameraForegroundService = true;
+        isCameraForegroundService = false;
         isResultListenerBack = true;
         isActivityResultBack = false;
         isCompressEngine = false;
         isLoaderDataEngine = false;
+        isLoaderFactoryEngine = false;
         isSandboxFileEngine = false;
         isPreviewFullScreenMode = true;
         isPreviewZoomEffect = chooseMode != SelectMimeType.ofAudio();
@@ -390,6 +446,14 @@ public final class PictureSelectionConfig implements Parcelable {
         skipCropList = new ArrayList<>();
         sortOrder = "";
         isSelectZoomAnim = true;
+        defaultAlbumName = "";
+        isAutoVideoPlay = false;
+        isLoopAutoPlay = false;
+        isFilterSizeDuration = true;
+        isPageSyncAsCount = false;
+        isPauseResumePlay = false;
+        isEnableVideoSize = true;
+        isOriginalSkipCompress = false;
     }
 
 
@@ -399,7 +463,7 @@ public final class PictureSelectionConfig implements Parcelable {
         return selectionSpec;
     }
 
-    private static PictureSelectionConfig mInstance;
+    private static volatile PictureSelectionConfig mInstance;
 
     public static PictureSelectionConfig getInstance() {
         if (mInstance == null) {
@@ -422,12 +486,16 @@ public final class PictureSelectionConfig implements Parcelable {
     public static void destroy() {
         PictureSelectionConfig.imageEngine = null;
         PictureSelectionConfig.compressEngine = null;
+        PictureSelectionConfig.compressFileEngine = null;
         PictureSelectionConfig.cropEngine = null;
+        PictureSelectionConfig.cropFileEngine = null;
         PictureSelectionConfig.sandboxFileEngine = null;
+        PictureSelectionConfig.uriToFileTransformEngine = null;
         PictureSelectionConfig.loaderDataEngine = null;
         PictureSelectionConfig.onResultCallListener = null;
         PictureSelectionConfig.onCameraInterceptListener = null;
         PictureSelectionConfig.onExternalPreviewEventListener = null;
+        PictureSelectionConfig.onInjectActivityPreviewListener = null;
         PictureSelectionConfig.onEditMediaEventListener = null;
         PictureSelectionConfig.onPermissionsEventListener = null;
         PictureSelectionConfig.onLayoutResourceListener = null;
@@ -437,9 +505,20 @@ public final class PictureSelectionConfig implements Parcelable {
         PictureSelectionConfig.onPermissionDescriptionListener = null;
         PictureSelectionConfig.onPermissionDeniedListener = null;
         PictureSelectionConfig.onRecordAudioListener = null;
+        PictureSelectionConfig.onQueryFilterListener = null;
+        PictureSelectionConfig.onBitmapWatermarkListener = null;
+        PictureSelectionConfig.onVideoThumbnailEventListener = null;
+        PictureSelectionConfig.viewLifecycle = null;
+        PictureSelectionConfig.loaderFactory = null;
+        PictureSelectionConfig.interpolatorFactory = null;
+        PictureSelectionConfig.onItemSelectAnimListener = null;
+        PictureSelectionConfig.onSelectAnimListener = null;
+        PictureSelectionConfig.videoPlayerEngine = null;
+        PictureSelectionConfig.onCustomLoadingListener = null;
         PictureThreadUtils.cancel(PictureThreadUtils.getIoPool());
         SelectedManager.clearSelectResult();
         BuildRecycleItemViewParams.clear();
+        LocalMedia.destroyPool();
         SelectedManager.setCurrentLocalMediaFolder(null);
     }
 

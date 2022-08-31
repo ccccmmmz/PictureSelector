@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -16,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
 
+import com.luck.picture.lib.config.FileSizeUnit;
 import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.config.SelectMimeType;
 import com.luck.picture.lib.manager.PictureCacheManager;
@@ -546,13 +548,23 @@ public class PictureFileUtils {
      * @param path
      * @return
      */
-    public static boolean isFileExists(String path) {
-        return TextUtils.isEmpty(path) || new File(path).exists();
+    public static boolean isImageFileExists(String path) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        options.inSampleSize = 2;
+        BitmapFactory.decodeFile(path, options);
+        return options.outWidth > 0 && options.outHeight > 0;
     }
 
-    public static final int KB = 1024;
-    public static final int MB = 1048576;
-    public static final int GB = 1073741824;
+    /**
+     * 判断文件是否存在
+     *
+     * @param path
+     * @return
+     */
+    public static boolean isFileExists(String path) {
+        return !TextUtils.isEmpty(path) && new File(path).exists();
+    }
 
     /**
      * Size of byte to fit size of memory.
@@ -563,20 +575,65 @@ public class PictureFileUtils {
      * @return fit size of memory
      */
     @SuppressLint("DefaultLocale")
-    public static String formatFileSize(final long byteSize, int precision) {
-        if (precision < 0) {
-            throw new IllegalArgumentException("precision shouldn't be less than zero!");
-        }
+    public static String formatFileSize(final long byteSize) {
         if (byteSize < 0) {
             throw new IllegalArgumentException("byteSize shouldn't be less than zero!");
-        } else if (byteSize < KB) {
-            return String.format("%." + precision + "fB", (double) byteSize);
-        } else if (byteSize < MB) {
-            return String.format("%." + precision + "fKB", (double) byteSize / KB);
-        } else if (byteSize < GB) {
-            return String.format("%." + precision + "fMB", (double) byteSize / MB);
+        } else if (byteSize < FileSizeUnit.KB) {
+            String format = String.format("%." + 2 + "f", (double) byteSize);
+            double num = ValueOf.toDouble(format);
+            long round = Math.round(num);
+            return (round - num == 0 ? round : format) + "B";
+        } else if (byteSize < FileSizeUnit.MB) {
+            String format = String.format("%." + 2 + "f", (double) byteSize / FileSizeUnit.KB);
+            double num = ValueOf.toDouble(format);
+            long round = Math.round(num);
+            return (round - num == 0 ? round : format) + "KB";
+        } else if (byteSize < FileSizeUnit.GB) {
+            String format = String.format("%." + 2 + "f", (double) byteSize / FileSizeUnit.MB);
+            double num = ValueOf.toDouble(format);
+            long round = Math.round(num);
+            return (round - num == 0 ? round : format) + "MB";
         } else {
-            return String.format("%." + precision + "fGB", (double) byteSize / GB);
+            String format = String.format("%." + 2 + "f", (double) byteSize / FileSizeUnit.GB);
+            double num = ValueOf.toDouble(format);
+            long round = Math.round(num);
+            return (round - num == 0 ? round : format) + "GB";
+        }
+    }
+
+
+    /**
+     * Size of byte to fit size of memory.
+     * <p>to three decimal places</p>
+     *
+     * @param byteSize  Size of byte.
+     * @param precision The precision
+     * @return fit size of memory
+     */
+    @SuppressLint("DefaultLocale")
+    public static String formatAccurateUnitFileSize(final long byteSize) {
+        if (byteSize < 0) {
+            throw new IllegalArgumentException("byteSize shouldn't be less than zero!");
+        } else if (byteSize < FileSizeUnit.ACCURATE_KB) {
+            String format = String.format("%." + 2 + "f", (double) byteSize);
+            double num = ValueOf.toDouble(format);
+            long round = Math.round(num);
+            return (round - num == 0 ? round : format) + "B";
+        } else if (byteSize < FileSizeUnit.ACCURATE_MB) {
+            String format = String.format("%." + 2 + "f", (double) byteSize / FileSizeUnit.ACCURATE_KB);
+            double num = ValueOf.toDouble(format);
+            long round = Math.round(num);
+            return (round - num == 0 ? round : format) + "KB";
+        } else if (byteSize < FileSizeUnit.ACCURATE_GB) {
+            String format = String.format("%." + 2 + "f", (double) byteSize / FileSizeUnit.ACCURATE_MB);
+            double num = ValueOf.toDouble(format);
+            long round = Math.round(num);
+            return (round - num == 0 ? round : format) + "MB";
+        } else {
+            String format = String.format("%." + 2 + "f", (double) byteSize / FileSizeUnit.ACCURATE_GB);
+            double num = ValueOf.toDouble(format);
+            long round = Math.round(num);
+            return (round - num == 0 ? round : format) + "GB";
         }
     }
 

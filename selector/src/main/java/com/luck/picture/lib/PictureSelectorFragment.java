@@ -3,11 +3,11 @@ package com.luck.picture.lib;
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -46,6 +46,7 @@ import com.luck.picture.lib.interfaces.OnRecyclerViewPreloadMoreListener;
 import com.luck.picture.lib.interfaces.OnRecyclerViewScrollListener;
 import com.luck.picture.lib.interfaces.OnRecyclerViewScrollStateListener;
 import com.luck.picture.lib.interfaces.OnRequestPermissionListener;
+import com.luck.picture.lib.loader.IBridgeMediaLoader;
 import com.luck.picture.lib.loader.LocalMediaLoader;
 import com.luck.picture.lib.loader.LocalMediaPageLoader;
 import com.luck.picture.lib.magical.BuildRecycleItemViewParams;
@@ -60,7 +61,6 @@ import com.luck.picture.lib.utils.AnimUtils;
 import com.luck.picture.lib.utils.DateUtils;
 import com.luck.picture.lib.utils.DensityUtil;
 import com.luck.picture.lib.utils.DoubleUtils;
-import com.luck.picture.lib.utils.SdkVersionUtils;
 import com.luck.picture.lib.utils.StyleUtils;
 import com.luck.picture.lib.utils.ToastUtils;
 import com.luck.picture.lib.utils.ValueOf;
@@ -88,7 +88,7 @@ public class PictureSelectorFragment extends PictureCommonFragment
     /**
      * 这个时间对应的是R.anim.ps_anim_modal_in里面的
      */
-    private static final int SELECT_ANIM_DURATION = 135;
+    private static int SELECT_ANIM_DURATION = 135;
 
     private RecyclerPreloadView mRecycler;
 
@@ -142,7 +142,7 @@ public class PictureSelectorFragment extends PictureCommonFragment
     @Override
     public int getResourceId() {
         int layoutResourceId = InjectResourceSource.getLayoutResource(getContext(), InjectResourceSource.MAIN_SELECTOR_LAYOUT_RESOURCE);
-        if (layoutResourceId != 0) {
+        if (layoutResourceId != InjectResourceSource.DEFAULT_LAYOUT_RESOURCE) {
             return layoutResourceId;
         }
         return R.layout.ps_fragment_selector;
@@ -251,7 +251,7 @@ public class PictureSelectorFragment extends PictureCommonFragment
         titleBar = view.findViewById(R.id.title_bar);
         bottomNarBar = view.findViewById(R.id.bottom_nar_bar);
         tvCurrentDataTime = view.findViewById(R.id.tv_current_data_time);
-        initLoader();
+        onCreateLoader();
         initAlbumListPopWindow();
         initTitleBar();
         initComplete();
@@ -315,21 +315,28 @@ public class PictureSelectorFragment extends PictureCommonFragment
             completeSelectView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    dispatchTransformResult();
+                    if (config.isEmptyResultReturn && SelectedManager.getSelectCount() == 0) {
+                        onExitPictureSelector();
+                    } else {
+                        dispatchTransformResult();
+                    }
                 }
             });
         }
     }
 
-    /**
-     * init LocalMedia Loader
-     */
-    protected void initLoader() {
-        if (config.isPageStrategy) {
-            mLoader = new LocalMediaPageLoader(getContext(), config);
+
+    @Override
+    public void onCreateLoader() {
+        if (PictureSelectionConfig.loaderFactory != null) {
+            mLoader = PictureSelectionConfig.loaderFactory.onCreateLoader();
+            if (mLoader == null) {
+                throw new NullPointerException("No available " + IBridgeMediaLoader.class + " loader found");
+            }
         } else {
-            mLoader = new LocalMediaLoader(getContext(), config);
+            mLoader = config.isPageStrategy ? new LocalMediaPageLoader() : new LocalMediaLoader();
         }
+        mLoader.initConfig(getContext(), config);
     }
 
     private void initTitleBar() {
@@ -483,7 +490,7 @@ public class PictureSelectorFragment extends PictureCommonFragment
     @Override
     public void handlePermissionSettingResult(String[] permissions) {
         onPermissionExplainEvent(false, null);
-        boolean isHasCamera = TextUtils.equals(permissions[0],PermissionConfig.CAMERA[0]);
+        boolean isHasCamera = permissions.length > 0 && TextUtils.equals(permissions[0], PermissionConfig.CAMERA[0]);
         boolean isHasPermissions;
         if (PictureSelectionConfig.onPermissionsEventListener != null) {
             isHasPermissions = PictureSelectionConfig.onPermissionsEventListener.hasPermissions(this, permissions);
@@ -491,11 +498,7 @@ public class PictureSelectorFragment extends PictureCommonFragment
             if (isHasCamera) {
                 isHasPermissions = PermissionChecker.isCheckSelfPermission(getContext(), permissions);
             } else {
-                if (SdkVersionUtils.isR()) {
-                    isHasPermissions = Environment.isExternalStorageManager();
-                } else {
-                    isHasPermissions = PermissionChecker.isCheckSelfPermission(getContext(), permissions);
-                }
+                isHasPermissions = PermissionChecker.isCheckSelfPermission(getContext(), permissions);
             }
         }
         if (isHasPermissions) {
@@ -512,6 +515,7 @@ public class PictureSelectorFragment extends PictureCommonFragment
                 onKeyBackFragmentFinish();
             }
         }
+        PermissionConfig.CURRENT_REQUEST_PERMISSION = new String[]{};
     }
 
     /**
@@ -668,7 +672,7 @@ public class PictureSelectorFragment extends PictureCommonFragment
                         }
                     });
         } else {
-            mLoader.loadFirstPageMedia(firstBucketId, mPage * config.pageSize,
+            mLoader.loadPageMediaData(firstBucketId, 1, mPage * config.pageSize,
                     new OnQueryDataResultListener<LocalMedia>() {
                         @Override
                         public void onComplete(ArrayList<LocalMedia> result, boolean isHasMore) {
@@ -807,7 +811,16 @@ public class PictureSelectorFragment extends PictureCommonFragment
             public int onSelected(View selectedView, int position, LocalMedia media) {
                 int selectResultCode = confirmSelect(media, selectedView.isSelected());
                 if (selectResultCode == SelectedManager.ADD_SUCCESS) {
-                    selectedView.startAnimation(AnimationUtils.loadAnimation(getContext(), R.anim.ps_anim_modal_in));
+                    if (PictureSelectionConfig.onSelectAnimListener != null) {
+                        long duration = PictureSelectionConfig.onSelectAnimListener.onSelectAnim(selectedView);
+                        if (duration > 0) {
+                            SELECT_ANIM_DURATION = (int) duration;
+                        }
+                    } else {
+                        Animation animation = AnimationUtils.loadAnimation(getContext(), R.anim.ps_anim_modal_in);
+                        SELECT_ANIM_DURATION = (int) animation.getDuration();
+                        selectedView.startAnimation(animation);
+                    }
                 }
                 return selectResultCode;
             }
@@ -1037,7 +1050,7 @@ public class PictureSelectorFragment extends PictureCommonFragment
                             }
                         });
             } else {
-                mLoader.loadPageMediaData(bucketId, mPage, config.pageSize, config.pageSize,
+                mLoader.loadPageMediaData(bucketId, mPage, config.pageSize,
                         new OnQueryDataResultListener<LocalMedia>() {
                             @Override
                             public void onComplete(ArrayList<LocalMedia> result, boolean isHasMore) {
@@ -1059,6 +1072,7 @@ public class PictureSelectorFragment extends PictureCommonFragment
                 int positionStart = mAdapter.getData().size();
                 mAdapter.getData().addAll(result);
                 mAdapter.notifyItemRangeChanged(positionStart, mAdapter.getItemCount());
+                hideDataNull();
             } else {
                 // 如果没数据这里在强制调用一下上拉加载更多，防止是因为某些条件过滤导致的假为0的情况
                 onRecyclerViewPreloadMore();
@@ -1145,8 +1159,12 @@ public class PictureSelectorFragment extends PictureCommonFragment
         if (albumListPopWindow.getFolderCount() == 0) {
             // 1、没有相册时需要手动创建相机胶卷
             allFolder = new LocalMediaFolder();
-            String folderName = config.chooseMode == SelectMimeType.ofAudio()
-                    ? getString(R.string.ps_all_audio) : getString(R.string.ps_camera_roll);
+            String folderName;
+            if (TextUtils.isEmpty(config.defaultAlbumName)) {
+                folderName = config.chooseMode == SelectMimeType.ofAudio() ? getString(R.string.ps_all_audio) : getString(R.string.ps_camera_roll);
+            } else {
+                folderName = config.defaultAlbumName;
+            }
             allFolder.setFolderName(folderName);
             allFolder.setFirstImagePath("");
             allFolder.setBucketId(PictureConfig.ALL);

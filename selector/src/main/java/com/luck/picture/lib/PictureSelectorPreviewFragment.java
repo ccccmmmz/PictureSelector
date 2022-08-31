@@ -8,7 +8,6 @@ import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.net.Uri;
 import android.os.Bundle;
@@ -53,10 +52,10 @@ import com.luck.picture.lib.decoration.HorizontalItemDecoration;
 import com.luck.picture.lib.decoration.WrapContentLinearLayoutManager;
 import com.luck.picture.lib.dialog.PictureCommonDialog;
 import com.luck.picture.lib.entity.LocalMedia;
-import com.luck.picture.lib.entity.LocalMediaFolder;
+import com.luck.picture.lib.entity.MediaExtraInfo;
 import com.luck.picture.lib.interfaces.OnCallbackListener;
-import com.luck.picture.lib.interfaces.OnQueryAlbumListener;
 import com.luck.picture.lib.interfaces.OnQueryDataResultListener;
+import com.luck.picture.lib.loader.IBridgeMediaLoader;
 import com.luck.picture.lib.loader.LocalMediaLoader;
 import com.luck.picture.lib.loader.LocalMediaPageLoader;
 import com.luck.picture.lib.magical.BuildRecycleItemViewParams;
@@ -67,7 +66,6 @@ import com.luck.picture.lib.manager.SelectedManager;
 import com.luck.picture.lib.style.PictureWindowAnimationStyle;
 import com.luck.picture.lib.style.SelectMainStyle;
 import com.luck.picture.lib.utils.ActivityCompatHelper;
-import com.luck.picture.lib.utils.BitmapUtils;
 import com.luck.picture.lib.utils.DensityUtil;
 import com.luck.picture.lib.utils.DownloadFileUtils;
 import com.luck.picture.lib.utils.MediaUtils;
@@ -112,8 +110,6 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
     protected int curPosition;
 
     protected boolean isInternalBottomPreview;
-
-    protected boolean isFirstLoaded;
 
     protected boolean isSaveInstanceState;
 
@@ -161,7 +157,7 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
 
     protected PreviewGalleryAdapter mGalleryAdapter;
 
-    protected List<View> mAnimViews;
+    protected List<View> mAnimViews = new ArrayList<>();
 
 
     public static PictureSelectorPreviewFragment newInstance() {
@@ -215,13 +211,12 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
         this.curPosition = position;
         this.isDisplayDelete = isDisplayDelete;
         this.isExternalPreview = true;
-        PictureSelectionConfig.getInstance().isPreviewZoomEffect = false;
     }
 
     @Override
     public int getResourceId() {
         int layoutResourceId = InjectResourceSource.getLayoutResource(getContext(), InjectResourceSource.PREVIEW_LAYOUT_RESOURCE);
-        if (layoutResourceId != 0) {
+        if (layoutResourceId != InjectResourceSource.DEFAULT_LAYOUT_RESOURCE) {
             return layoutResourceId;
         }
         return R.layout.ps_fragment_preview;
@@ -260,24 +255,27 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
         bottomNarBar = view.findViewById(R.id.bottom_nar_bar);
         magicalView.setMagicalContent(viewPager);
         setMagicalViewBackgroundColor();
-        mAnimViews = new ArrayList<>();
-        mAnimViews.add(titleBar);
-        mAnimViews.add(tvSelected);
-        mAnimViews.add(tvSelectedWord);
-        mAnimViews.add(selectClickArea);
-        mAnimViews.add(completeSelectView);
-        mAnimViews.add(bottomNarBar);
+        addAminViews(titleBar, tvSelected, tvSelectedWord, selectClickArea, completeSelectView, bottomNarBar);
+        onCreateLoader();
         initTitleBar();
         initViewPagerData(mData);
-        iniMagicalView();
         if (isExternalPreview) {
             externalPreviewStyle();
         } else {
-            initLoader();
             initBottomNavBar();
             initPreviewSelectGallery((ViewGroup) view);
             initComplete();
         }
+        iniMagicalView();
+    }
+
+    /**
+     * addAminViews
+     *
+     * @param views
+     */
+    public void addAminViews(View... views) {
+        Collections.addAll(mAnimViews, views);
     }
 
     private void setMagicalViewBackgroundColor() {
@@ -338,7 +336,7 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
     }
 
     private boolean isHasMagicalEffect() {
-        return !isInternalBottomPreview && !isExternalPreview && config.isPreviewZoomEffect;
+        return !isInternalBottomPreview && config.isPreviewZoomEffect;
     }
 
     /**
@@ -349,79 +347,131 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
 
             @Override
             public void onBeginBackMinAnim() {
-                BasePreviewHolder currentHolder = viewPageAdapter.getCurrentHolder(viewPager.getCurrentItem());
-                if (currentHolder == null) {
-                    return;
-                }
-                if (currentHolder.coverImageView.getVisibility() == View.GONE) {
-                    currentHolder.coverImageView.setVisibility(View.VISIBLE);
-                }
-                if (currentHolder instanceof PreviewVideoHolder) {
-                    PreviewVideoHolder videoHolder = (PreviewVideoHolder) currentHolder;
-                    if (videoHolder.ivPlayButton.getVisibility() == View.VISIBLE) {
-                        videoHolder.ivPlayButton.setVisibility(View.GONE);
-                    }
-                }
+                onMojitoBeginBackMinAnim();
             }
 
             @Override
             public void onBeginMagicalAnimComplete(MagicalView mojitoView, boolean showImmediately) {
-                BasePreviewHolder currentHolder = viewPageAdapter.getCurrentHolder(viewPager.getCurrentItem());
-                if (currentHolder == null) {
-                    return;
-                }
-                LocalMedia media = mData.get(viewPager.getCurrentItem());
-                int realWidth, realHeight;
-                if (media.isCut() && media.getCropImageWidth() > 0 && media.getCropImageHeight() > 0) {
-                    realWidth = media.getCropImageWidth();
-                    realHeight = media.getCropImageHeight();
-                } else {
-                    realWidth = media.getWidth();
-                    realHeight = media.getHeight();
-                }
-                if (MediaUtils.isLongImage(realWidth, realHeight)) {
-                    currentHolder.coverImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                } else {
-                    currentHolder.coverImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                }
-                if (currentHolder instanceof PreviewVideoHolder) {
-                    PreviewVideoHolder videoHolder = (PreviewVideoHolder) currentHolder;
-                    if (videoHolder.ivPlayButton.getVisibility() == View.GONE) {
-                        videoHolder.ivPlayButton.setVisibility(View.VISIBLE);
-                    }
-                }
+                onMojitoBeginAnimComplete(mojitoView, showImmediately);
             }
 
             @Override
             public void onBackgroundAlpha(float alpha) {
-                for (int i = 0; i < mAnimViews.size(); i++) {
-                    if (mAnimViews.get(i) instanceof TitleBar) {
-                        continue;
-                    }
-                    mAnimViews.get(i).setAlpha(alpha);
-                }
+                onMojitoBackgroundAlpha(alpha);
             }
 
             @Override
             public void onMagicalViewFinish() {
-                onBackCurrentFragment();
+                onMojitoMagicalViewFinish();
             }
 
             @Override
             public void onBeginBackMinMagicalFinish(boolean isResetSize) {
-                ViewParams itemViewParams = BuildRecycleItemViewParams.getItemViewParams(isShowCamera ? curPosition + 1 : curPosition);
-                if (itemViewParams == null) {
-                    return;
-                }
-                BasePreviewHolder currentHolder = viewPageAdapter.getCurrentHolder(viewPager.getCurrentItem());
-                if (currentHolder == null) {
-                    return;
-                }
-                currentHolder.coverImageView.getLayoutParams().width = itemViewParams.width;
-                currentHolder.coverImageView.getLayoutParams().height = itemViewParams.height;
-                currentHolder.coverImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                onMojitoBeginBackMinFinish(isResetSize);
             }
         });
+    }
+
+    /**
+     * 开始准备执行缩放动画
+     */
+    protected void onMojitoBeginBackMinAnim() {
+        BasePreviewHolder currentHolder = viewPageAdapter.getCurrentHolder(viewPager.getCurrentItem());
+        if (currentHolder == null) {
+            return;
+        }
+        if (currentHolder.coverImageView.getVisibility() == View.GONE) {
+            currentHolder.coverImageView.setVisibility(View.VISIBLE);
+        }
+        if (currentHolder instanceof PreviewVideoHolder) {
+            PreviewVideoHolder videoHolder = (PreviewVideoHolder) currentHolder;
+            if (videoHolder.ivPlayButton.getVisibility() == View.VISIBLE) {
+                videoHolder.ivPlayButton.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    /**
+     * 关闭缩放动画执行完成后关闭页面
+     */
+    protected void onMojitoMagicalViewFinish() {
+        if (isExternalPreview && isNormalDefaultEnter() && isHasMagicalEffect()) {
+            onExitPictureSelector();
+        } else {
+            onBackCurrentFragment();
+        }
+    }
+
+    /**
+     * 缩放动画执行时透明度跟随变化
+     *
+     * @param alpha
+     */
+    protected void onMojitoBackgroundAlpha(float alpha) {
+        for (int i = 0; i < mAnimViews.size(); i++) {
+            if (mAnimViews.get(i) instanceof TitleBar) {
+                continue;
+            }
+            mAnimViews.get(i).setAlpha(alpha);
+        }
+    }
+
+    /**
+     * 关闭缩放动画执行完成
+     *
+     * @param isResetSize
+     */
+    protected void onMojitoBeginBackMinFinish(boolean isResetSize) {
+        ViewParams itemViewParams = BuildRecycleItemViewParams.getItemViewParams(isShowCamera ? curPosition + 1 : curPosition);
+        if (itemViewParams == null) {
+            return;
+        }
+        BasePreviewHolder currentHolder = viewPageAdapter.getCurrentHolder(viewPager.getCurrentItem());
+        if (currentHolder == null) {
+            return;
+        }
+        currentHolder.coverImageView.getLayoutParams().width = itemViewParams.width;
+        currentHolder.coverImageView.getLayoutParams().height = itemViewParams.height;
+        currentHolder.coverImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+    }
+
+    /**
+     * 缩放动画执行完成
+     *
+     * @param mojitoView
+     * @param showImmediately
+     */
+    protected void onMojitoBeginAnimComplete(MagicalView mojitoView, boolean showImmediately) {
+        BasePreviewHolder currentHolder = viewPageAdapter.getCurrentHolder(viewPager.getCurrentItem());
+        if (currentHolder == null) {
+            return;
+        }
+        LocalMedia media = mData.get(viewPager.getCurrentItem());
+        int realWidth, realHeight;
+        if (media.isCut() && media.getCropImageWidth() > 0 && media.getCropImageHeight() > 0) {
+            realWidth = media.getCropImageWidth();
+            realHeight = media.getCropImageHeight();
+        } else {
+            realWidth = media.getWidth();
+            realHeight = media.getHeight();
+        }
+        if (MediaUtils.isLongImage(realWidth, realHeight)) {
+            currentHolder.coverImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        } else {
+            currentHolder.coverImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        }
+        if (currentHolder instanceof PreviewVideoHolder) {
+            PreviewVideoHolder videoHolder = (PreviewVideoHolder) currentHolder;
+            if (config.isAutoVideoPlay) {
+                startAutoVideoPlay(viewPager.getCurrentItem());
+            } else {
+                if (videoHolder.ivPlayButton.getVisibility() == View.GONE) {
+                    if (!viewPageAdapter.isPlaying(viewPager.getCurrentItem())) {
+                        videoHolder.ivPlayButton.setVisibility(View.VISIBLE);
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -478,87 +528,44 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
         super.onConfigurationChanged(newConfig);
         if (isHasMagicalEffect() && mData.size() > curPosition) {
             LocalMedia media = mData.get(curPosition);
-            int[] size = getRealSizeFromMedia(media);
-            ViewParams viewParams = BuildRecycleItemViewParams.getItemViewParams(isShowCamera ? curPosition + 1 : curPosition);
-            if (viewParams == null || size[0] == 0 || size[1] == 0) {
-                magicalView.setViewParams(0, 0, 0, 0, size[0], size[1]);
-                magicalView.resetStartNormal(size[0], size[1], false);
-            } else {
-                magicalView.setViewParams(viewParams.left, viewParams.top, viewParams.width, viewParams.height, size[0], size[1]);
-                magicalView.resetStart();
-            }
-        }
-    }
-
-    /**
-     * init LocalMedia Loader
-     */
-    protected void initLoader() {
-        if (config.isPageStrategy) {
-            mLoader = new LocalMediaPageLoader(getContext(), config);
-        } else {
-            mLoader = new LocalMediaLoader(getContext(), config);
-        }
-    }
-
-    /**
-     * 加载数据
-     */
-    private void loadData(int pageSize) {
-        if (config.isOnlySandboxDir) {
-            if (PictureSelectionConfig.loaderDataEngine != null) {
-                PictureSelectionConfig.loaderDataEngine.loadOnlyInAppDirAllMediaData(getContext(),
-                        new OnQueryAlbumListener<LocalMediaFolder>() {
-                            @Override
-                            public void onComplete(LocalMediaFolder folder) {
-                                handleLoadData(folder.getData());
-                            }
-                        });
-            } else {
-                mLoader.loadOnlyInAppDirAllMedia(new OnQueryAlbumListener<LocalMediaFolder>() {
+            if (PictureMimeType.isHasVideo(media.getMimeType())) {
+                getVideoRealSizeFromMedia(media, false, new OnCallbackListener<int[]>() {
                     @Override
-                    public void onComplete(LocalMediaFolder folder) {
-                        handleLoadData(folder.getData());
+                    public void onCall(int[] size) {
+                        changeViewParams(size);
                     }
                 });
-            }
-        } else {
-            if (PictureSelectionConfig.loaderDataEngine != null) {
-                PictureSelectionConfig.loaderDataEngine.loadFirstPageMediaData(getContext(),
-                        mBucketId, 1, pageSize, new OnQueryDataResultListener<LocalMedia>() {
-                            @Override
-                            public void onComplete(ArrayList<LocalMedia> result, boolean isHasMore) {
-                                handleLoadData(result);
-                            }
-                        });
             } else {
-                mLoader.loadFirstPageMedia(mBucketId, pageSize, new OnQueryDataResultListener<LocalMedia>() {
-                    @Override
-                    public void onComplete(ArrayList<LocalMedia> result, boolean isHasMore) {
-                        handleLoadData(result);
-                    }
-                });
+                changeViewParams(getImageRealSizeFromMedia(media, false));
             }
         }
     }
 
-    private void handleLoadData(ArrayList<LocalMedia> result) {
-        if (ActivityCompatHelper.isDestroy(getActivity())) {
+    private void changeViewParams(int[] size) {
+        ViewParams viewParams = BuildRecycleItemViewParams.getItemViewParams(isShowCamera ? curPosition + 1 : curPosition);
+        if (viewParams == null || size[0] == 0 || size[1] == 0) {
+            magicalView.setViewParams(0, 0, 0, 0, size[0], size[1]);
+            magicalView.resetStartNormal(size[0], size[1], false);
+        } else {
+            magicalView.setViewParams(viewParams.left, viewParams.top, viewParams.width, viewParams.height, size[0], size[1]);
+            magicalView.resetStart();
+        }
+    }
+
+    @Override
+    public void onCreateLoader() {
+        if (isExternalPreview) {
             return;
         }
-        if (result.size() == 0) {
-            onBackCurrentFragment();
-        } else {
-            mData = result;
-            // 这里的作用主要是防止内存不足情况下重新load了数据，此时LocalMedia是没有position的
-            // 但如果此时你选中或取消一个结果,PictureSelectorFragment列表页 notifyItemChanged下标会不对
-            int position = isShowCamera ? 0 : -1;
-            for (int i = 0; i < mData.size(); i++) {
-                position++;
-                mData.get(i).setPosition(position);
+        if (PictureSelectionConfig.loaderFactory != null) {
+            mLoader = PictureSelectionConfig.loaderFactory.onCreateLoader();
+            if (mLoader == null) {
+                throw new NullPointerException("No available " + IBridgeMediaLoader.class + " loader found");
             }
-            initViewPagerData(mData);
+        } else {
+            mLoader = config.isPageStrategy ? new LocalMediaPageLoader() : new LocalMediaLoader();
         }
+        mLoader.initConfig(getContext(), config);
     }
 
     /**
@@ -634,8 +641,8 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
                 layoutParams.rightMargin = selectMainStyle.getPreviewSelectMarginRight();
             }
         }
-
         completeSelectView.setCompleteSelectViewStyle();
+        completeSelectView.setSelectedChange(true);
         if (selectMainStyle.isCompleteSelectRelativeTop()) {
             if (completeSelectView.getLayoutParams() instanceof ConstraintLayout.LayoutParams) {
                 ((ConstraintLayout.LayoutParams) completeSelectView
@@ -685,13 +692,19 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
         completeSelectView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                boolean isComplete = true;
+                boolean isComplete;
                 if (selectMainStyle.isCompleteSelectRelativeTop() && SelectedManager.getSelectCount() == 0) {
                     isComplete = confirmSelect(mData.get(viewPager.getCurrentItem()), false)
                             == SelectedManager.ADD_SUCCESS;
+                } else {
+                    isComplete = SelectedManager.getSelectCount() > 0;
                 }
-                if (isComplete) {
-                    dispatchTransformResult();
+                if (config.isEmptyResultReturn && SelectedManager.getSelectCount() == 0) {
+                    onExitPictureSelector();
+                } else {
+                    if (isComplete) {
+                        dispatchTransformResult();
+                    }
                 }
             }
         });
@@ -707,7 +720,11 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
             @Override
             public void onBackPressed() {
                 if (isExternalPreview) {
-                    handleExternalPreviewBack();
+                    if (config.isPreviewZoomEffect) {
+                        magicalView.backToMin();
+                    } else {
+                        handleExternalPreviewBack();
+                    }
                 } else {
                     if (!isInternalBottomPreview && config.isPreviewZoomEffect) {
                         magicalView.backToMin();
@@ -734,7 +751,11 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
                     LocalMedia currentMedia = mData.get(viewPager.getCurrentItem());
                     int selectResultCode = confirmSelect(currentMedia, tvSelected.isSelected());
                     if (selectResultCode == SelectedManager.ADD_SUCCESS) {
-                        tvSelected.startAnimation(AnimationUtils.loadAnimation(getContext(), R.anim.ps_anim_modal_in));
+                        if (PictureSelectionConfig.onSelectAnimListener != null) {
+                            PictureSelectionConfig.onSelectAnimListener.onSelectAnim(tvSelected);
+                        } else {
+                            tvSelected.startAnimation(AnimationUtils.loadAnimation(getContext(), R.anim.ps_anim_modal_in));
+                        }
                     }
                 }
             }
@@ -801,10 +822,15 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
             mGalleryAdapter.setItemClickListener(new PreviewGalleryAdapter.OnItemClickListener() {
                 @Override
                 public void onItemClick(int position, LocalMedia media, View v) {
-                    if (isInternalBottomPreview || TextUtils.equals(currentAlbum, getString(R.string.ps_camera_roll))
+                    String albumName = TextUtils.isEmpty(config.defaultAlbumName) ? getString(R.string.ps_camera_roll) : config.defaultAlbumName;
+                    if (isInternalBottomPreview || TextUtils.equals(currentAlbum, albumName)
                             || TextUtils.equals(media.getParentFolderName(), currentAlbum)) {
                         int newPosition = isInternalBottomPreview ? position : isShowCamera ? media.position - 1 : media.position;
                         if (newPosition == viewPager.getCurrentItem() && media.isChecked()) {
+                            return;
+                        }
+                        LocalMedia item = viewPageAdapter.getItem(newPosition);
+                        if (item != null && !TextUtils.equals(media.getPath(), item.getPath()) || media.getId() != item.getId()) {
                             return;
                         }
                         if (viewPager.getAdapter() != null) {
@@ -830,7 +856,7 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
             } else {
                 mGalleryRecycle.setVisibility(View.INVISIBLE);
             }
-            mAnimViews.add(mGalleryRecycle);
+            addAminViews(mGalleryRecycle);
             ItemTouchHelper mItemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.Callback() {
                 @Override
                 public boolean isLongPressDragEnabled() {
@@ -1099,13 +1125,20 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
         return new PicturePreviewAdapter();
     }
 
+    public PicturePreviewAdapter getAdapter() {
+        return viewPageAdapter;
+    }
+
+    public ViewPager2 getViewPager2() {
+        return viewPager;
+    }
+
     private void initViewPagerData(ArrayList<LocalMedia> data) {
         viewPageAdapter = createAdapter();
         viewPageAdapter.setData(data);
         viewPageAdapter.setOnPreviewEventListener(new MyOnPreviewEventListener());
         viewPager.setOrientation(ViewPager2.ORIENTATION_HORIZONTAL);
         viewPager.setAdapter(viewPageAdapter);
-        viewPager.setCurrentItem(curPosition, false);
         SelectedManager.clearPreviewData();
         if (data.size() == 0 || curPosition > data.size()) {
             onKeyBackFragmentFinish();
@@ -1115,11 +1148,60 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
         bottomNarBar.isDisplayEditor(PictureMimeType.isHasVideo(media.getMimeType())
                 || PictureMimeType.isHasAudio(media.getMimeType()));
         tvSelected.setSelected(SelectedManager.getSelectedResult().contains(data.get(viewPager.getCurrentItem())));
-        completeSelectView.setSelectedChange(true);
         viewPager.registerOnPageChangeCallback(pageChangeCallback);
         viewPager.setPageTransformer(new MarginPageTransformer(DensityUtil.dip2px(getContext(), 3)));
+        viewPager.setCurrentItem(curPosition, false);
         sendChangeSubSelectPositionEvent(false);
         notifySelectNumberStyle(data.get(curPosition));
+        startZoomEffect(media);
+    }
+
+    /**
+     * 启动预览缩放特效
+     */
+    protected void startZoomEffect(LocalMedia media) {
+        if (isSaveInstanceState || isInternalBottomPreview) {
+            return;
+        }
+        if (config.isPreviewZoomEffect) {
+            viewPager.post(new Runnable() {
+                @Override
+                public void run() {
+                    viewPageAdapter.setCoverScaleType(curPosition);
+                }
+            });
+            if (PictureMimeType.isHasVideo(media.getMimeType())) {
+                getVideoRealSizeFromMedia(media, !PictureMimeType.isHasHttp(media.getAvailablePath()), new OnCallbackListener<int[]>() {
+                    @Override
+                    public void onCall(int[] size) {
+                        start(size);
+                    }
+                });
+            } else {
+                start(getImageRealSizeFromMedia(media, !PictureMimeType.isHasHttp(media.getAvailablePath())));
+            }
+        }
+    }
+
+    /**
+     * start magical
+     *
+     * @param size
+     */
+    private void start(int[] size) {
+        magicalView.changeRealScreenHeight(size[0], size[1], false);
+        ViewParams viewParams = BuildRecycleItemViewParams.getItemViewParams(isShowCamera ? curPosition + 1 : curPosition);
+        if (viewParams == null || (size[0] == 0 && size[1] == 0)) {
+            magicalView.startNormal(size[0], size[1], false);
+            magicalView.setBackgroundAlpha(1.0F);
+            for (int i = 0; i < mAnimViews.size(); i++) {
+                mAnimViews.get(i).setAlpha(1.0F);
+            }
+        } else {
+            magicalView.setViewParams(viewParams.left, viewParams.top, viewParams.width, viewParams.height, size[0], size[1]);
+            magicalView.start(false);
+        }
+        ObjectAnimator.ofFloat(viewPager, "alpha", 0.0F, 1.0F).setDuration(50).start();
     }
 
     /**
@@ -1128,53 +1210,16 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
     private class MyOnPreviewEventListener implements BasePreviewHolder.OnPreviewEventListener {
 
         @Override
-        public void onLoadComplete(int width, int height, OnCallbackListener<Boolean> call) {
-            if (isSaveInstanceState || isFirstLoaded || isInternalBottomPreview || isExternalPreview) {
-                call.onCall(false);
-            } else {
-                call.onCall(config.isPreviewZoomEffect);
-                if (config.isPreviewZoomEffect) {
-                    isFirstLoaded = true;
-                    magicalView.changeRealScreenHeight(width, height, false);
-                    ViewParams viewParams = BuildRecycleItemViewParams.getItemViewParams(isShowCamera ? curPosition + 1 : curPosition);
-                    if (viewParams == null) {
-                        magicalView.startNormal(width, height, false);
-                        magicalView.setBackgroundAlpha(1.0F);
-                        for (int i = 0; i < mAnimViews.size(); i++) {
-                            mAnimViews.get(i).setAlpha(1.0F);
-                        }
-                    } else {
-                        magicalView.setViewParams(viewParams.left, viewParams.top, viewParams.width, viewParams.height, width, height);
-                        magicalView.start(false);
-                    }
-                    ObjectAnimator.ofFloat(viewPager, "alpha", 0.0F, 1.0F).setDuration(50).start();
-                }
-            }
-        }
-
-        @Override
-        public void onLoadError() {
-            if (isFirstLoaded || isInternalBottomPreview) {
-                return;
-            }
-            if (config.isPreviewZoomEffect) {
-                isFirstLoaded = true;
-                viewPager.setAlpha(1.0F);
-                magicalView.startNormal(0, 0, false);
-                magicalView.setBackgroundAlpha(1.0F);
-                for (int i = 0; i < mAnimViews.size(); i++) {
-                    mAnimViews.get(i).setAlpha(1.0F);
-                }
-            }
-        }
-
-        @Override
         public void onBackPressed() {
             if (config.isPreviewFullScreenMode) {
                 previewFullScreenMode();
             } else {
                 if (isExternalPreview) {
-                    handleExternalPreviewBack();
+                    if (config.isPreviewZoomEffect) {
+                        magicalView.backToMin();
+                    } else {
+                        handleExternalPreviewBack();
+                    }
                 } else {
                     if (!isInternalBottomPreview && config.isPreviewZoomEffect) {
                         magicalView.backToMin();
@@ -1211,7 +1256,11 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
     private void onKeyDownBackToMin() {
         if (!ActivityCompatHelper.isDestroy(getActivity())) {
             if (isExternalPreview) {
-                onExitPictureSelector();
+                if (config.isPreviewZoomEffect) {
+                    magicalView.backToMin();
+                } else {
+                    onExitPictureSelector();
+                }
             } else if (isInternalBottomPreview) {
                 onBackCurrentFragment();
             } else if (config.isPreviewZoomEffect) {
@@ -1353,8 +1402,14 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
                     changeMagicalViewParams(position);
                 }
                 if (config.isPreviewZoomEffect) {
-                    if (isFirstLoaded || isInternalBottomPreview) {
+                    if (isInternalBottomPreview && config.isAutoVideoPlay) {
+                        startAutoVideoPlay(position);
+                    } else {
                         viewPageAdapter.setVideoPlayButtonUI(position);
+                    }
+                } else {
+                    if (config.isAutoVideoPlay) {
+                        startAutoVideoPlay(position);
                     }
                 }
                 notifyGallerySelectMedia(currentMedia);
@@ -1374,6 +1429,19 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
         }
     };
 
+    /**
+     * 自动播放视频
+     *
+     * @param position
+     */
+    private void startAutoVideoPlay(int position) {
+        viewPager.post(new Runnable() {
+            @Override
+            public void run() {
+                viewPageAdapter.startAutoVideoPlay(position);
+            }
+        });
+    }
 
     /**
      * 更新MagicalView ViewParams 参数
@@ -1382,30 +1450,16 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
      */
     private void changeMagicalViewParams(int position) {
         LocalMedia media = mData.get(position);
-        int[] size = getRealSizeFromMedia(media);
-        int[] maxImageSize = BitmapUtils.getMaxImageSize(size[0], size[1]);
-        if (size[0] > 0 && size[1] > 0) {
-            setMagicalViewParams(size[0], size[1], position);
+        if (PictureMimeType.isHasVideo(media.getMimeType())){
+            getVideoRealSizeFromMedia(media, false, new OnCallbackListener<int[]>() {
+                @Override
+                public void onCall(int[] size) {
+                    setMagicalViewParams(size[0], size[1], position);
+                }
+            });
         } else {
-            PictureSelectionConfig.imageEngine.loadImageBitmap(getActivity(), media.getAvailablePath(),
-                    maxImageSize[0], maxImageSize[1], new OnCallbackListener<Bitmap>() {
-                        @Override
-                        public void onCall(Bitmap bitmap) {
-                            if (ActivityCompatHelper.isDestroy(getActivity())) {
-                                return;
-                            }
-                            media.setWidth(bitmap.getWidth());
-                            media.setHeight(bitmap.getHeight());
-                            if (MediaUtils.isLongImage(bitmap.getWidth(), bitmap.getHeight())) {
-                                size[0] = screenWidth;
-                                size[1] = screenHeight;
-                            } else {
-                                size[0] = bitmap.getWidth();
-                                size[1] = bitmap.getHeight();
-                            }
-                            setMagicalViewParams(size[0], size[1], position);
-                        }
-                    });
+            int[] size = getImageRealSizeFromMedia(media, false);
+            setMagicalViewParams(size[0], size[1], position);
         }
     }
 
@@ -1426,7 +1480,13 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
         }
     }
 
-    private int[] getRealSizeFromMedia(LocalMedia media) {
+    /**
+     * 获取图片Media的真实大小
+     *
+     * @param media
+     * @param resize
+     */
+    private int[] getImageRealSizeFromMedia(LocalMedia media, boolean resize) {
         int realWidth;
         int realHeight;
         if (MediaUtils.isLongImage(media.getWidth(), media.getHeight())) {
@@ -1435,12 +1495,61 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
         } else {
             realWidth = media.getWidth();
             realHeight = media.getHeight();
+            if (resize) {
+                if ((realWidth <= 0 || realHeight <= 0) || (realWidth > realHeight)) {
+                    MediaExtraInfo extraInfo = MediaUtils.getImageSize(getContext(), media.getAvailablePath());
+                    if (extraInfo.getWidth() > 0) {
+                        realWidth = extraInfo.getWidth();
+                        media.setWidth(realWidth);
+                    }
+                    if (extraInfo.getHeight() > 0) {
+                        realHeight = extraInfo.getHeight();
+                        media.setHeight(realHeight);
+                    }
+                }
+            }
         }
         if (media.isCut() && media.getCropImageWidth() > 0 && media.getCropImageHeight() > 0) {
             realWidth = media.getCropImageWidth();
             realHeight = media.getCropImageHeight();
         }
         return new int[]{realWidth, realHeight};
+    }
+
+    /**
+     * 获取视频Media的真实大小
+     *
+     * @param media
+     * @param resize
+     */
+    private void getVideoRealSizeFromMedia(LocalMedia media, boolean resize, OnCallbackListener<int[]> call) {
+        boolean isReturnNow = true;
+        if (resize) {
+            if ((media.getWidth() <= 0 || media.getHeight() <= 0) || (media.getWidth() > media.getHeight())) {
+                if (config.isEnableVideoSize) {
+                    isReturnNow = false;
+                    // 先不展现内容，异步获取可能耗时会导致界面先出现图片而后在放大出现
+                    viewPager.setAlpha(0F);
+                    MediaUtils.getVideoSize(getContext(), media.getAvailablePath(), new OnCallbackListener<MediaExtraInfo>() {
+                        @Override
+                        public void onCall(MediaExtraInfo extraInfo) {
+                            if (extraInfo.getWidth() > 0) {
+                                media.setWidth(extraInfo.getWidth());
+                            }
+                            if (extraInfo.getHeight() > 0) {
+                                media.setHeight(extraInfo.getHeight());
+                            }
+                            if (call != null) {
+                                call.onCall(new int[]{media.getWidth(), media.getHeight()});
+                            }
+                        }
+                    });
+                }
+            }
+        }
+        if (isReturnNow) {
+            call.onCall(new int[]{media.getWidth(), media.getHeight()});
+        }
     }
 
     /**
@@ -1509,6 +1618,14 @@ public class PictureSelectorPreviewFragment extends PictureCommonFragment {
             viewPageAdapter.notifyItemChanged(viewPager.getCurrentItem());
             notifyGallerySelectMedia(currentMedia);
         }
+    }
+
+    @Override
+    protected void onExitPictureSelector() {
+        if (viewPageAdapter != null) {
+            viewPageAdapter.destroy();
+        }
+        super.onExitPictureSelector();
     }
 
     @Override

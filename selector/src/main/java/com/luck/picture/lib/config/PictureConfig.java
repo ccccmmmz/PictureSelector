@@ -52,7 +52,7 @@ public final class PictureConfig {
 
     public final static int CAMERA_BEFORE = 1;
 
-    public final static long MB = 1048576;
+
 
     public final static int DEFAULT_SPAN_COUNT = 4;
 
@@ -67,4 +67,5 @@ public final class PictureConfig {
     public final static int UNSET = -1;
 
     public final static int MODE_TYPE_SYSTEM_SOURCE = 1;
+    public final static int MODE_TYPE_EXTERNAL_PREVIEW_SOURCE = 2;
 }

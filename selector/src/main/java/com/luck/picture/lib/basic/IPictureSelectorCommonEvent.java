@@ -6,6 +6,7 @@ import android.os.Bundle;
 import com.luck.picture.lib.config.PictureSelectionConfig;
 import com.luck.picture.lib.config.SelectMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
+import com.luck.picture.lib.loader.IBridgeMediaLoader;
 
 import java.util.ArrayList;
 
@@ -15,6 +16,11 @@ import java.util.ArrayList;
  * @describe：IPictureSelectorCommonEvent
  */
 public interface IPictureSelectorCommonEvent {
+
+    /**
+     * 创建数据查询器
+     */
+    void onCreateLoader();
 
     /**
      * View Layout
@@ -181,6 +187,90 @@ public interface IPictureSelectorCommonEvent {
      * @param result
      */
     void onResultEvent(ArrayList<LocalMedia> result);
+
+    /**
+     * 裁剪
+     * @param result
+     */
+    void onCrop(ArrayList<LocalMedia> result);
+
+    /**
+     * 裁剪
+     * @param result
+     */
+    void onOldCrop(ArrayList<LocalMedia> result);
+
+    /**
+     * 压缩
+     *
+     * @param result
+     */
+    void onCompress(ArrayList<LocalMedia> result);
+
+    /**
+     * 压缩
+     *
+     * @param result
+     */
+    @Deprecated
+    void onOldCompress(ArrayList<LocalMedia> result);
+
+    /**
+     * 验证是否需要裁剪
+     *
+     * @return
+     */
+    boolean checkCropValidity();
+
+    /**
+     * 验证是否需要裁剪
+     *
+     * @return
+     */
+    @Deprecated
+    boolean checkOldCropValidity();
+
+    /**
+     * 验证是否需要压缩
+     *
+     * @return
+     */
+    boolean checkCompressValidity();
+
+    /**
+     * 验证是否需要压缩
+     *
+     * @return
+     */
+    @Deprecated
+    boolean checkOldCompressValidity();
+
+    /**
+     * 验证是否需要做沙盒转换处理
+     *
+     * @return
+     */
+    boolean checkTransformSandboxFile();
+
+    /**
+     * 验证是否需要做沙盒转换处理
+     *
+     * @return
+     */
+    @Deprecated
+    boolean checkOldTransformSandboxFile();
+
+    /**
+     * 验证是否需要添加水印
+     *
+     * @return
+     */
+    boolean checkAddBitmapWatermark();
+
+    /**
+     * 验证是否需要处理视频缩略图
+     */
+    boolean checkVideoThumbnail();
 
     /**
      * 权限申请

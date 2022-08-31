@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.view.Display;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -55,6 +56,7 @@ import androidx.lifecycle.LiveData;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.luck.lib.camerax.listener.CameraListener;
+import com.luck.lib.camerax.listener.CameraXOrientationEventListener;
 import com.luck.lib.camerax.listener.CameraXPreviewViewTouchListener;
 import com.luck.lib.camerax.listener.CaptureListener;
 import com.luck.lib.camerax.listener.ClickListener;
@@ -87,7 +89,7 @@ import java.util.concurrent.TimeUnit;
  * @date：2020-01-04 13:41
  * @describe：自定义相机View
  */
-public class CustomCameraView extends RelativeLayout {
+public class CustomCameraView extends RelativeLayout implements CameraXOrientationEventListener.OnOrientationChangedListener {
 
     private static final double RATIO_4_3_VALUE = 4.0 / 3.0;
     private static final double RATIO_16_9_VALUE = 16.0 / 9.0;
@@ -167,6 +169,11 @@ public class CustomCameraView extends RelativeLayout {
      */
     private boolean isZoomPreview;
 
+    /**
+     * 是否自动纠偏
+     */
+    private boolean isAutoRotation;
+
     private long recordTime = 0;
 
     /**
@@ -176,6 +183,7 @@ public class CustomCameraView extends RelativeLayout {
     private ClickListener mOnClickListener;
     private ImageCallbackListener mImageCallbackListener;
     private ImageView mImagePreview;
+    private View mImagePreviewBg;
     private ImageView mSwitchCamera;
     private ImageView mFlashLamp;
     private TextView tvCurrentTime;
@@ -184,6 +192,7 @@ public class CustomCameraView extends RelativeLayout {
     private TextureView mTextureView;
     private DisplayManager displayManager;
     private DisplayListener displayListener;
+    private CameraXOrientationEventListener orientationEventListener;
     private CameraInfo mCameraInfo;
     private CameraControl mCameraControl;
     private FocusImageView focusImageView;
@@ -218,6 +227,7 @@ public class CustomCameraView extends RelativeLayout {
         mTextureView = findViewById(R.id.video_play_preview);
         focusImageView = findViewById(R.id.focus_view);
         mImagePreview = findViewById(R.id.cover_preview);
+        mImagePreviewBg = findViewById(R.id.cover_preview_bg);
         mSwitchCamera = findViewById(R.id.image_switch);
         mFlashLamp = findViewById(R.id.image_flash);
         mCaptureLayout = findViewById(R.id.capture_layout);
@@ -226,13 +236,17 @@ public class CustomCameraView extends RelativeLayout {
         displayManager = (DisplayManager) getContext().getSystemService(Context.DISPLAY_SERVICE);
         displayListener = new DisplayListener();
         displayManager.registerDisplayListener(displayListener, null);
-
         mainExecutor = ContextCompat.getMainExecutor(getContext());
 
         mCameraPreviewView.post(new Runnable() {
             @Override
             public void run() {
-                displayId = mCameraPreviewView.getDisplay().getDisplayId();
+                if (mCameraPreviewView != null) {
+                    Display display = mCameraPreviewView.getDisplay();
+                    if (display != null) {
+                        displayId = display.getDisplayId();
+                    }
+                }
             }
         });
 
@@ -262,13 +276,12 @@ public class CustomCameraView extends RelativeLayout {
                 mSwitchCamera.setVisibility(INVISIBLE);
                 mFlashLamp.setVisibility(INVISIBLE);
                 tvCurrentTime.setVisibility(GONE);
-                boolean isReversedHorizontal = lensFacing == CameraSelector.LENS_FACING_FRONT;
                 ImageCapture.Metadata metadata = new ImageCapture.Metadata();
-                metadata.setReversedHorizontal(isReversedHorizontal);
+                metadata.setReversedHorizontal(isReversedHorizontal());
                 ImageCapture.OutputFileOptions fileOptions;
                 File cameraFile;
                 if (isSaveExternal()) {
-                    cameraFile = createTempFile(false);
+                    cameraFile = FileUtils.createTempFile(getContext(), false);
                 } else {
                     cameraFile = FileUtils.createCameraFile(getContext(), CameraUtils.TYPE_IMAGE,
                             outPutCameraFileName, imageFormat, outPutCameraDir);
@@ -276,7 +289,8 @@ public class CustomCameraView extends RelativeLayout {
                 fileOptions = new ImageCapture.OutputFileOptions.Builder(cameraFile)
                         .setMetadata(metadata).build();
                 mImageCapture.takePicture(fileOptions, mainExecutor,
-                        new MyImageResultCallback(mImagePreview, mCaptureLayout, mImageCallbackListener, mCameraListener));
+                        new MyImageResultCallback(CustomCameraView.this, mImagePreview, mImagePreviewBg,
+                                mCaptureLayout, mImageCallbackListener, mCameraListener));
             }
 
             @Override
@@ -291,7 +305,7 @@ public class CustomCameraView extends RelativeLayout {
                 VideoCapture.OutputFileOptions fileOptions;
                 File cameraFile;
                 if (isSaveExternal()) {
-                    cameraFile = createTempFile(true);
+                    cameraFile = FileUtils.createTempFile(getContext(), true);
                 } else {
                     cameraFile = FileUtils.createCameraFile(getContext(), CameraUtils.TYPE_VIDEO,
                             outPutCameraFileName, videoFormat, outPutCameraDir);
@@ -389,9 +403,22 @@ public class CustomCameraView extends RelativeLayout {
 
             @Override
             public void confirm() {
-                String outputPath = isMergeExternalStorageState(activity, SimpleCameraX.getOutputPath(activity.getIntent()));
+                String outputPath = SimpleCameraX.getOutputPath(activity.getIntent());
+                if (isSaveExternal()) {
+                    outputPath = isMergeExternalStorageState(activity, outputPath);
+                } else {
+                    // 对前置镜头导致的镜像进行一个纠正
+                    if (isImageCaptureEnabled() && isReversedHorizontal()) {
+                        File cameraFile = FileUtils.createCameraFile(getContext(), CameraUtils.TYPE_IMAGE,
+                                outPutCameraFileName, imageFormat, outPutCameraDir);
+                        if (FileUtils.copyPath(activity, outputPath, cameraFile.getAbsolutePath())) {
+                            outputPath = cameraFile.getAbsolutePath();
+                        }
+                    }
+                }
                 if (isImageCaptureEnabled()) {
                     mImagePreview.setVisibility(INVISIBLE);
+                    mImagePreviewBg.setAlpha(0F);
                     if (mCameraListener != null) {
                         mCameraListener.onPictureSuccess(outputPath);
                     }
@@ -414,53 +441,46 @@ public class CustomCameraView extends RelativeLayout {
     }
 
     private String isMergeExternalStorageState(Activity activity, String outputPath) {
-        if (isSaveExternal()) {
-            try {
-                // 当用户未设置存储路径时，相片默认是存在外部公共目录下
-                Uri externalSavedUri;
-                if (isImageCaptureEnabled()) {
-                    ContentValues contentValues = CameraUtils.buildImageContentValues(outPutCameraFileName, imageFormatForQ);
-                    externalSavedUri = getContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-                } else {
-                    ContentValues contentValues = CameraUtils.buildVideoContentValues(outPutCameraFileName, videoFormatForQ);
-                    externalSavedUri = getContext().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
+        try {
+            // 对前置镜头导致的镜像进行一个纠正
+            if (isImageCaptureEnabled() && isReversedHorizontal()) {
+                File tempFile = FileUtils.createTempFile(activity, false);
+                if (FileUtils.copyPath(activity, outputPath, tempFile.getAbsolutePath())) {
+                    outputPath = tempFile.getAbsolutePath();
                 }
-                if (externalSavedUri == null) {
-                    return outputPath;
-                }
-                OutputStream outputStream = getContext().getContentResolver().openOutputStream(externalSavedUri);
-                boolean isWriteFileSuccess = FileUtils.writeFileFromIS(new FileInputStream(outputPath), outputStream);
-                if (isWriteFileSuccess) {
-                    FileUtils.deleteFile(getContext(), outputPath);
-                    SimpleCameraX.putOutputUri(activity.getIntent(), externalSavedUri);
-                    return externalSavedUri.toString();
-                }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             }
+            // 当用户未设置存储路径时，相片默认是存在外部公共目录下
+            Uri externalSavedUri;
+            if (isImageCaptureEnabled()) {
+                ContentValues contentValues = CameraUtils.buildImageContentValues(outPutCameraFileName, imageFormatForQ);
+                externalSavedUri = getContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+            } else {
+                ContentValues contentValues = CameraUtils.buildVideoContentValues(outPutCameraFileName, videoFormatForQ);
+                externalSavedUri = getContext().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
+            }
+            if (externalSavedUri == null) {
+                return outputPath;
+            }
+            OutputStream outputStream = getContext().getContentResolver().openOutputStream(externalSavedUri);
+            boolean isWriteFileSuccess = FileUtils.writeFileFromIS(new FileInputStream(outputPath), outputStream);
+            if (isWriteFileSuccess) {
+                FileUtils.deleteFile(getContext(), outputPath);
+                SimpleCameraX.putOutputUri(activity.getIntent(), externalSavedUri);
+                return externalSavedUri.toString();
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
         return outputPath;
-    }
-
-    /**
-     * 创建一个临时路径，主要是解决华为手机放弃拍照后会弹出相册图片被删除的提示
-     *
-     * @param isVideo
-     * @return
-     */
-    private File createTempFile(boolean isVideo) {
-        File externalFilesDir = getContext().getExternalFilesDir("");
-        File tempCameraFile = new File(externalFilesDir.getAbsolutePath(), ".TemporaryCamera");
-        if (!tempCameraFile.exists()) {
-            tempCameraFile.mkdirs();
-        }
-        String fileName = System.currentTimeMillis() + (isVideo ? CameraUtils.MP4 : CameraUtils.JPEG);
-        return new File(tempCameraFile.getAbsolutePath(), fileName);
     }
 
 
     private boolean isSaveExternal() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && TextUtils.isEmpty(outPutCameraDir);
+    }
+
+    private boolean isReversedHorizontal() {
+        return lensFacing == CameraSelector.LENS_FACING_FRONT;
     }
 
     /**
@@ -479,6 +499,7 @@ public class CustomCameraView extends RelativeLayout {
         videoBitRate = extras.getInt(SimpleCameraX.EXTRA_VIDEO_BIT_RATE);
         isManualFocus = extras.getBoolean(SimpleCameraX.EXTRA_MANUAL_FOCUS);
         isZoomPreview = extras.getBoolean(SimpleCameraX.EXTRA_ZOOM_PREVIEW);
+        isAutoRotation = extras.getBoolean(SimpleCameraX.EXTRA_AUTO_ROTATION);
 
         int recordVideoMaxSecond = extras.getInt(SimpleCameraX.EXTRA_RECORD_VIDEO_MAX_SECOND, CustomCameraConfig.DEFAULT_MAX_RECORD_VIDEO);
         recordVideoMinSecond = extras.getInt(SimpleCameraX.EXTRA_RECORD_VIDEO_MIN_SECOND, CustomCameraConfig.DEFAULT_MIN_RECORD_VIDEO);
@@ -500,7 +521,10 @@ public class CustomCameraView extends RelativeLayout {
                 TimeUnit.MILLISECONDS.toSeconds(recordVideoMaxSecond)
                         - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(recordVideoMaxSecond)));
         tvCurrentTime.setText(format);
-
+        if (isAutoRotation && buttonFeatures != CustomCameraConfig.BUTTON_STATE_ONLY_RECORDER) {
+            orientationEventListener = new CameraXOrientationEventListener(getContext(), this);
+            startCheckOrientation();
+        }
         setCaptureLoadingColor(captureLoadingColor);
         setProgressColor(captureLoadingColor);
         boolean isCheckSelfPermission = PermissionChecker.checkSelfPermission(getContext(), new String[]{Manifest.permission.CAMERA});
@@ -536,6 +560,38 @@ public class CustomCameraView extends RelativeLayout {
                             }
                         }
                     });
+        }
+    }
+
+    /**
+     * 检测手机方向
+     */
+    private void startCheckOrientation() {
+        if (orientationEventListener != null) {
+            orientationEventListener.star();
+        }
+    }
+
+    /**
+     * 停止检测手机方向
+     */
+    public void stopCheckOrientation(){
+        if (orientationEventListener != null) {
+            orientationEventListener.stop();
+        }
+    }
+
+    private int getTargetRotation() {
+        return mImageCapture.getTargetRotation();
+    }
+
+    @Override
+    public void onOrientationChanged(int orientation) {
+        if (mImageCapture != null) {
+            mImageCapture.setTargetRotation(orientation);
+        }
+        if (mImageAnalyzer != null) {
+            mImageAnalyzer.setTargetRotation(orientation);
         }
     }
 
@@ -817,14 +873,18 @@ public class CustomCameraView extends RelativeLayout {
      */
     private static class MyImageResultCallback implements ImageCapture.OnImageSavedCallback {
         private final WeakReference<ImageView> mImagePreviewReference;
+        private final WeakReference<View> mImagePreviewBgReference;
         private final WeakReference<CaptureLayout> mCaptureLayoutReference;
         private final WeakReference<ImageCallbackListener> mImageCallbackListenerReference;
         private final WeakReference<CameraListener> mCameraListenerReference;
+        private final WeakReference<CustomCameraView> mCameraViewLayoutReference;
 
-        public MyImageResultCallback(ImageView imagePreview, CaptureLayout captureLayout,
+        public MyImageResultCallback(CustomCameraView cameraView,ImageView imagePreview, View imagePreviewBg, CaptureLayout captureLayout,
                                      ImageCallbackListener imageCallbackListener,
                                      CameraListener cameraListener) {
+            this.mCameraViewLayoutReference = new WeakReference<>(cameraView);
             this.mImagePreviewReference = new WeakReference<>(imagePreview);
+            this.mImagePreviewBgReference = new WeakReference<>(imagePreviewBg);
             this.mCaptureLayoutReference = new WeakReference<>(captureLayout);
             this.mImageCallbackListenerReference = new WeakReference<>(imageCallbackListener);
             this.mCameraListenerReference = new WeakReference<>(cameraListener);
@@ -832,18 +892,44 @@ public class CustomCameraView extends RelativeLayout {
 
         @Override
         public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-            if (outputFileResults.getSavedUri() == null || mCaptureLayoutReference.get() == null ||
-                    mImagePreviewReference.get() == null || mImageCallbackListenerReference.get() == null) {
-                return;
-            }
             Uri savedUri = outputFileResults.getSavedUri();
-            Context context = mImagePreviewReference.get().getContext();
-            SimpleCameraX.putOutputUri(((Activity) context).getIntent(), savedUri);
-            String outPutCameraPath = FileUtils.isContent(savedUri.toString()) ? savedUri.toString() : savedUri.getPath();
-            mCaptureLayoutReference.get().setButtonCaptureEnabled(true);
-            mImageCallbackListenerReference.get().onLoadImage(outPutCameraPath, mImagePreviewReference.get());
-            mImagePreviewReference.get().setVisibility(View.VISIBLE);
-            mCaptureLayoutReference.get().startTypeBtnAnimator();
+            if (savedUri != null) {
+                CustomCameraView customCameraView = mCameraViewLayoutReference.get();
+                if (customCameraView != null) {
+                    customCameraView.stopCheckOrientation();
+                }
+                ImageView mImagePreview = mImagePreviewReference.get();
+                if (mImagePreview != null) {
+                    Context context = mImagePreview.getContext();
+                    SimpleCameraX.putOutputUri(((Activity) context).getIntent(), savedUri);
+                    mImagePreview.setVisibility(View.VISIBLE);
+                    if (customCameraView != null && customCameraView.isAutoRotation) {
+                        int targetRotation = customCameraView.getTargetRotation();
+                        // 这种角度拍出来的图片宽比高大，所以使用ScaleType.FIT_CENTER缩放模式
+                        if (targetRotation == Surface.ROTATION_90 || targetRotation == Surface.ROTATION_270) {
+                            mImagePreview.setAdjustViewBounds(true);
+                            View mImagePreviewBackground = mImagePreviewBgReference.get();
+                            if (mImagePreviewBackground != null) {
+                                mImagePreviewBackground.animate().alpha(1F).setDuration(220).start();
+                            }
+                        } else {
+                            mImagePreview.setAdjustViewBounds(false);
+                            mImagePreview.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                        }
+                    }
+                    ImageCallbackListener imageCallbackListener = mImageCallbackListenerReference.get();
+                    if (imageCallbackListener != null) {
+                        String outPutCameraPath = FileUtils.isContent(savedUri.toString()) ? savedUri.toString() : savedUri.getPath();
+                        imageCallbackListener.onLoadImage(outPutCameraPath, mImagePreview);
+                    }
+                }
+
+                CaptureLayout captureLayout = mCaptureLayoutReference.get();
+                if (captureLayout != null) {
+                    captureLayout.setButtonCaptureEnabled(true);
+                    captureLayout.startTypeBtnAnimator();
+                }
+            }
         }
 
         @Override
@@ -967,6 +1053,7 @@ public class CustomCameraView extends RelativeLayout {
     private void resetState() {
         if (isImageCaptureEnabled()) {
             mImagePreview.setVisibility(INVISIBLE);
+            mImagePreviewBg.setAlpha(0F);
         } else {
             try {
                 mVideoCapture.stopRecording();
@@ -1042,6 +1129,7 @@ public class CustomCameraView extends RelativeLayout {
         FileUtils.deleteFile(getContext(), outputPath);
         stopVideoPlay();
         resetState();
+        startCheckOrientation();
     }
 
     /**
@@ -1070,6 +1158,7 @@ public class CustomCameraView extends RelativeLayout {
      */
     public void onDestroy() {
         displayManager.unregisterDisplayListener(displayListener);
+        stopCheckOrientation();
         focusImageView.destroy();
     }
 }

@@ -44,21 +44,24 @@ public class PictureOnlyCameraFragment extends PictureCommonFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        if (SdkVersionUtils.isQ()) {
-            openSelectedCamera();
-        } else {
-            PermissionChecker.getInstance().requestPermissions(this,
-                    PermissionConfig.WRITE_EXTERNAL_STORAGE, new PermissionResultCallback() {
-                        @Override
-                        public void onGranted() {
-                            openSelectedCamera();
-                        }
+        // 这里只有非内存回收状态下才走，否则当内存不足Fragment被回收后会重复执行
+        if (savedInstanceState == null) {
+            if (SdkVersionUtils.isQ()) {
+                openSelectedCamera();
+            } else {
+                PermissionChecker.getInstance().requestPermissions(this,
+                        PermissionConfig.WRITE_EXTERNAL_STORAGE, new PermissionResultCallback() {
+                            @Override
+                            public void onGranted() {
+                                openSelectedCamera();
+                            }
 
-                        @Override
-                        public void onDenied() {
-                            handlePermissionDenied(PermissionConfig.WRITE_EXTERNAL_STORAGE);
-                        }
-                    });
+                            @Override
+                            public void onDenied() {
+                                handlePermissionDenied(PermissionConfig.WRITE_EXTERNAL_STORAGE);
+                            }
+                        });
+            }
         }
     }
 
@@ -99,10 +102,13 @@ public class PictureOnlyCameraFragment extends PictureCommonFragment {
         } else {
             if (!PermissionChecker.isCheckCamera(getContext())) {
                 ToastUtils.showToast(getContext(), getString(R.string.ps_camera));
-            } else if (!PermissionChecker.isCheckWriteStorage(getContext())) {
-                ToastUtils.showToast(getContext(), getString(R.string.ps_jurisdiction));
+            } else {
+                if (!PermissionChecker.isCheckWriteStorage(getContext())) {
+                    ToastUtils.showToast(getContext(), getString(R.string.ps_jurisdiction));
+                }
             }
             onKeyBackFragmentFinish();
         }
+        PermissionConfig.CURRENT_REQUEST_PERMISSION = new String[]{};
     }
 }

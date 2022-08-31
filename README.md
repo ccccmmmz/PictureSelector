@@ -1,19 +1,17 @@
 # PictureSelector 3.0
-   A PictureSelector for Android platform, which supports obtaining pictures, videos, audio & photos from photo albums, cutting (single picture or multi picture cutting), compression, theme custom configuration and other functions, and supports dynamic access & an open source picture selection framework suitable for Android 5.0 + system<br>
-   
-   ![](image/picture_framework_es.png)
+   A PictureSelector for Android platform, which supports obtaining pictures, videos, audio & photos from photo albums, cutting (single picture or multi picture cutting), compression, theme custom configuration and other functions, and supports dynamic access & an open source picture selection framework suitable for Android 5.0 + system<br> 
    
    [简体中文🇨🇳](README_CN.md)
 
-   [Download Demo Apk](https://github.com/LuckSiege/PictureSelector/raw/version_component/app/demo/demo_2022-03-27_085616_v3.0.8.apk)<br>
+   [Download Demo Apk](https://github.com/LuckSiege/PictureSelector/raw/version_component/app/demo/demo_2022-08-14_082114_v3.10.6.apk)<br>
 
-[![Maven Central](https://img.shields.io/badge/maven%20central-v3.0.8-yellow)](https://github.com/LuckSiege)
+[![Maven Central](https://img.shields.io/badge/maven%20central-v3.10.6-yellow)](https://github.com/LuckSiege)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](https://github.com/LuckSiege)
 [![Star](https://img.shields.io/github/stars/LuckSiege/PictureSelector.svg)](https://github.com/LuckSiege/PictureSelector)
 
 
 ## Contents
--[Last version](https://github.com/LuckSiege/PictureSelector/releases/tag/v3.0.8)<br>
+-[Last version](https://github.com/LuckSiege/PictureSelector/releases/tag/v3.10.6)<br>
 -[Download](#Download)<br>
 -[Usage](#Usage)<br>
 -[Permission](#Permission)<br>
@@ -37,16 +35,16 @@ repositories {
 
 dependencies {
   // PictureSelector basic (Necessary)
-  implementation 'io.github.lucksiege:pictureselector:v3.0.8'
+  implementation 'io.github.lucksiege:pictureselector:v3.10.6'
 
   // image compress library (Not necessary)
-  implementation 'io.github.lucksiege:compress:v3.0.8'
+  implementation 'io.github.lucksiege:compress:v3.10.6'
 
   // uCrop library (Not necessary)
-  implementation 'io.github.lucksiege:ucrop:v3.0.8'
+  implementation 'io.github.lucksiege:ucrop:v3.10.6'
 
   // simple camerax library (Not necessary)
-  implementation 'io.github.lucksiege:camerax:v3.0.8'
+  implementation 'io.github.lucksiege:camerax:v3.10.6'
 }
 ```
 
@@ -56,47 +54,44 @@ Or Maven:
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>pictureselector</artifactId>
-  <version>v3.0.8</version>
+  <version>v3.10.6</version>
 </dependency>
 
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>compress</artifactId>
-  <version>v3.0.8</version>
+  <version>v3.10.6</version>
 </dependency>
 
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>ucrop</artifactId>
-  <version>v3.0.8</version>
+  <version>v3.10.6</version>
 </dependency>
 
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>camerax</artifactId>
-  <version>v3.0.8</version>
+  <version>v3.10.6</version>
 </dependency>
 ```
 
-## Permission
+## Permission  
+
+Permission describe，see [documentation](https://github.com/LuckSiege/PictureSelector/wiki/PictureSelector-3.0-%E6%9D%83%E9%99%90%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E)
 
 ```sh
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.WRITE_SETTINGS" />
-<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 <uses-permission android:name="android.permission.WRITE_MEDIA_STORAGE" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.WRITE_SETTINGS" />
 <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-<uses-permission android:name="android.permission.VIBRATE" />
-<uses-permission android:name="android.permission.READ_PHONE_STATE" />
-<uses-permission android:name="android.permission.BLUETOOTH" />
 <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.VIBRATE" />
+<uses-permission android:name="android.permission.BLUETOOTH" />
 ```
 
 Android 11 use camera，AndroidManifest.xm add the code：
@@ -181,6 +176,23 @@ PictureSelector.create(this)
 });
 ```
 
+To take photos separately in the Navigation Fragment scene, please use the following methods:
+
+```sh
+PictureSelector.create(this)
+     .openCamera(SelectMimeType.ofImage())
+     .forResultActivity(new OnResultCallbackListener<LocalMedia>() {
+        @Override
+        public void onResult(ArrayList<LocalMedia> result) {
+
+        }
+
+        @Override
+        public void onCancel() {
+
+        }
+});
+```
 
 3、You can also use the following example：
 
@@ -327,9 +339,9 @@ The advanced use cases are as follow：
 2、Use the image compress,See [documentation](https://github.com/LuckSiege/PictureSelector/wiki/PictureSelector-3.0-%E5%A6%82%E4%BD%95%E5%8E%8B%E7%BC%A9%EF%BC%9F)
 
 ```sh
-.setCompressEngine(new CompressEngine() {
+.setCompressEngine(new CompressFileEngine() {
    @Override
-   public void onStartCompress(Context context, ArrayList<LocalMedia> list, OnCallbackListener<ArrayList<LocalMedia>> call){
+   public void onStartCompress(Context context, ArrayList<Uri> source, OnKeyValueResultCallbackListener call){
 
    }
 });
@@ -339,9 +351,9 @@ The advanced use cases are as follow：
 
 ```sh
 
-.setCropEngine(new CropEngine() {
+.setCropEngine(new CropFileEngine() {
    @Override
-   public void onStartCrop(Fragment fragment, LocalMedia currentLocalMedia, ArrayList<LocalMedia> dataSource, int requestCode) {
+   public void onStartCrop(Fragment fragment, Uri srcUri, Uri destinationUri, ArrayList<String> dataSource, int requestCode) {
 
    }
 });
@@ -403,6 +415,16 @@ The advanced use cases are as follow：
 
 ```
 
+7、Android 10 and above, Sandbox mechanism, file processing，Permissions,See [documentation](https://github.com/LuckSiege/PictureSelector/wiki/PictureSelector-3.0-%E5%A6%82%E4%BD%95%E8%AE%BF%E9%97%AE%E6%B2%99%E7%9B%92%E5%A4%96%E8%B5%84%E6%BA%90%EF%BC%9F)
+
+```sh
+.setSandboxFileEngine(new UriToFileTransformEngine() {
+    @Override
+    public void onUriToFileAsyncTransform(Context context, String srcPath, String mineType, OnKeyValueResultCallbackListener call) {
+                                        
+    }
+});
+```
 
 ## ProGuard
 ```sh

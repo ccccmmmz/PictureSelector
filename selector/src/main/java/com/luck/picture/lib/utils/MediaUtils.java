@@ -62,17 +62,51 @@ public class MediaUtils {
     /**
      * 获取mimeType
      *
-     * @param url
+     * @param path
      * @return
      */
-    public static String getMimeTypeFromMediaUrl(String url) {
-        String fileExtension = MimeTypeMap.getFileExtensionFromUrl(url);
+    public static String getMimeTypeFromMediaUrl(String path) {
+        String fileExtension = MimeTypeMap.getFileExtensionFromUrl(path);
         String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(
                 fileExtension.toLowerCase());
         if (TextUtils.isEmpty(mimeType)) {
-            mimeType = getMimeType(new File(url));
+            mimeType = getMimeType(new File(path));
         }
         return TextUtils.isEmpty(mimeType) ? PictureMimeType.MIME_TYPE_JPEG : mimeType;
+    }
+
+    /**
+     * 获取mimeType
+     *
+     * @param url
+     * @return
+     */
+    public static String getMimeTypeFromMediaHttpUrl(String url) {
+        if (TextUtils.isEmpty(url)) {
+            return null;
+        }
+        if (url.toLowerCase().endsWith(".jpg") || url.toLowerCase().endsWith(".jpeg")) {
+            return "image/jpeg";
+        } else if (url.toLowerCase().endsWith(".png")) {
+            return "image/png";
+        } else if (url.toLowerCase().endsWith(".gif")) {
+            return "image/gif";
+        } else if (url.toLowerCase().endsWith(".webp")) {
+            return "image/webp";
+        } else if (url.toLowerCase().endsWith(".bmp")) {
+            return "image/bmp";
+        } else if (url.toLowerCase().endsWith(".mp4")) {
+            return "video/mp4";
+        } else if (url.toLowerCase().endsWith(".avi")) {
+            return "video/avi";
+        } else if (url.toLowerCase().endsWith(".mp3")) {
+            return "audio/mpeg";
+        } else if (url.toLowerCase().endsWith(".amr")) {
+            return "audio/amr";
+        } else if (url.toLowerCase().endsWith(".m4a")) {
+            return "audio/mpeg";
+        }
+        return null;
     }
 
     /**
@@ -98,51 +132,6 @@ public class MediaUtils {
             return false;
         }
         return height > width * 3;
-    }
-
-    /**
-     * 生成BucketId
-     *
-     * @param context         上下文
-     * @param cameraFile      拍照资源文件
-     * @param outPutCameraDir 自定义拍照输出目录
-     * @return
-     */
-    public static long generateCameraBucketId(Context context, File cameraFile, String outPutCameraDir) {
-        long bucketId;
-        if (TextUtils.isEmpty(outPutCameraDir)) {
-            bucketId = getFirstBucketId(context, cameraFile.getParent());
-        } else {
-            if (cameraFile.getParentFile() != null) {
-                bucketId = cameraFile.getParentFile().getName().hashCode();
-            } else {
-                bucketId = getFirstBucketId(context, cameraFile.getParent());
-            }
-        }
-        return bucketId;
-    }
-
-
-    /**
-     * 生成BucketId
-     *
-     * @param context        上下文
-     * @param cameraFile     拍照资源文件
-     * @param outPutAudioDir 自定义拍照输出目录
-     * @return
-     */
-    public static long generateSoundsBucketId(Context context, File cameraFile, String outPutAudioDir) {
-        long bucketId;
-        if (TextUtils.isEmpty(outPutAudioDir)) {
-            bucketId = getFirstBucketId(context,cameraFile.getParent());
-        } else {
-            if (cameraFile.getParentFile() != null) {
-                bucketId = cameraFile.getParentFile().getName().hashCode();
-            } else {
-                bucketId = getFirstBucketId(context,cameraFile.getParent());
-            }
-        }
-        return bucketId;
     }
 
     /**
@@ -201,6 +190,9 @@ public class MediaUtils {
      */
     public static MediaExtraInfo getImageSize(Context context, String url) {
         MediaExtraInfo mediaExtraInfo = new MediaExtraInfo();
+        if (PictureMimeType.isHasHttp(url)) {
+            return mediaExtraInfo;
+        }
         InputStream inputStream = null;
         try {
             BitmapFactory.Options options = new BitmapFactory.Options();
@@ -228,8 +220,37 @@ public class MediaUtils {
      * @param url
      * @return
      */
+    public static void getVideoSize(Context context, String url, OnCallbackListener<MediaExtraInfo> call) {
+        PictureThreadUtils.executeByIo(new PictureThreadUtils.SimpleTask<MediaExtraInfo>() {
+
+            @Override
+            public MediaExtraInfo doInBackground() {
+                return getVideoSize(context, url);
+            }
+
+            @Override
+            public void onSuccess(MediaExtraInfo result) {
+                PictureThreadUtils.cancel(this);
+                if (call != null) {
+                    call.onCall(result);
+                }
+            }
+        });
+    }
+
+
+    /**
+     * get Local video width or height
+     *
+     * @param context
+     * @param url
+     * @return
+     */
     public static MediaExtraInfo getVideoSize(Context context, String url) {
         MediaExtraInfo mediaExtraInfo = new MediaExtraInfo();
+        if (PictureMimeType.isHasHttp(url)) {
+            return mediaExtraInfo;
+        }
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         try {
             if (PictureMimeType.isContent(url)) {
@@ -267,6 +288,9 @@ public class MediaUtils {
      */
     public static MediaExtraInfo getAudioSize(Context context, String url) {
         MediaExtraInfo mediaExtraInfo = new MediaExtraInfo();
+        if (PictureMimeType.isHasHttp(url)) {
+            return mediaExtraInfo;
+        }
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         try {
             if (PictureMimeType.isContent(url)) {
@@ -339,26 +363,28 @@ public class MediaUtils {
     }
 
     /**
-     * 获取最新一条拍照记录
+     * getPathMediaBucketId
      *
      * @return
      */
-    public static long getFirstBucketId(Context context,String absoluteDir) {
+    public static Long[] getPathMediaBucketId(Context context, String absolutePath) {
+        Long[] mediaBucketId = new Long[]{0L, 0L};
         Cursor data = null;
         try {
             //selection: 指定查询条件
             String selection = MediaStore.Files.FileColumns.DATA + " like ?";
             //定义selectionArgs：
-            String[] selectionArgs = {"%" + absoluteDir + "%"};
+            String[] selectionArgs = {"%" + absolutePath + "%"};
             if (SdkVersionUtils.isR()) {
-                Bundle queryArgs = MediaUtils.createQueryArgsBundle(selection, selectionArgs, 1, 0,MediaStore.Files.FileColumns._ID + " DESC");
-                data = context.getApplicationContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), null, queryArgs, null);
+                Bundle queryArgs = MediaUtils.createQueryArgsBundle(selection, selectionArgs, 1, 0, MediaStore.Files.FileColumns._ID + " DESC");
+                data = context.getContentResolver().query(MediaStore.Files.getContentUri("external"), null, queryArgs, null);
             } else {
                 String orderBy = MediaStore.Files.FileColumns._ID + " DESC limit 1 offset 0";
-                data = context.getApplicationContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), null, selection, selectionArgs, orderBy);
+                data = context.getContentResolver().query(MediaStore.Files.getContentUri("external"), null, selection, selectionArgs, orderBy);
             }
             if (data != null && data.getCount() > 0 && data.moveToFirst()) {
-                return data.getLong(data.getColumnIndex("bucket_id"));
+                mediaBucketId[0] = data.getLong(data.getColumnIndex(MediaStore.Files.FileColumns._ID));
+                mediaBucketId[1] = data.getLong(data.getColumnIndex("bucket_id"));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -367,7 +393,7 @@ public class MediaUtils {
                 data.close();
             }
         }
-        return -1;
+        return mediaBucketId;
     }
 
 

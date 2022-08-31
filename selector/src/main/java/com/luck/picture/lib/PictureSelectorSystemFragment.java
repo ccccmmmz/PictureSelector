@@ -364,19 +364,20 @@ public class PictureSelectorSystemFragment extends PictureCommonFragment {
     @Override
     public void handlePermissionSettingResult(String[] permissions) {
         onPermissionExplainEvent(false, null);
-        boolean isHasPermissions;
+        boolean isCheckReadStorage;
         if (PictureSelectionConfig.onPermissionsEventListener != null) {
-            isHasPermissions = PictureSelectionConfig.onPermissionsEventListener
+            isCheckReadStorage = PictureSelectionConfig.onPermissionsEventListener
                     .hasPermissions(this, permissions);
         } else {
-            isHasPermissions = PermissionChecker.isCheckReadStorage(getContext());
+            isCheckReadStorage = PermissionChecker.isCheckReadStorage(getContext());
         }
-        if (isHasPermissions) {
+        if (isCheckReadStorage) {
             openSystemAlbum();
         } else {
             ToastUtils.showToast(getContext(), getString(R.string.ps_jurisdiction));
             onKeyBackFragmentFinish();
         }
+        PermissionConfig.CURRENT_REQUEST_PERMISSION = new String[]{};
     }
 
     @Override
