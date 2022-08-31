@@ -26,7 +26,21 @@ class GlideEngine : ImageEngine {
             .into(imageView)
     }
 
-    override fun loadImageBitmap(
+    override fun loadImage(
+        context: Context,
+        imageView: ImageView,
+        url: String,
+        maxWidth: Int,
+        maxHeight: Int
+    ) {
+        Glide.with(context)
+            .asBitmap()
+            .override(maxWidth, maxHeight)
+            .load(url)
+            .into(imageView)
+    }
+
+    private fun loadImageBitmap(
         context: Context,
         url: String,
         maxWidth: Int,

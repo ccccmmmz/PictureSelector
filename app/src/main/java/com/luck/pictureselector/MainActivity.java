@@ -16,6 +16,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.provider.MediaStore;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -153,6 +154,7 @@ import java.util.Collections;
 import java.util.List;
 
 import kotlinImpl.activityResultContract.ActivityResultContractCompat;
+import kotlinImpl.activity_bundle.BundleData;
 import top.zibin.luban.CompressionPredicate;
 import top.zibin.luban.Luban;
 import top.zibin.luban.OnCompressListener;
@@ -211,6 +213,7 @@ public class MainActivity extends AppCompatActivity implements IBridgePictureBeh
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getIntentData();
         selectorStyle = new PictureSelectorStyle();
         ImageView minus = findViewById(R.id.minus);
         ImageView plus = findViewById(R.id.plus);
@@ -2360,5 +2363,17 @@ public class MainActivity extends AppCompatActivity implements IBridgePictureBeh
 
     public Context getContext() {
         return this;
+    }
+
+    private void getIntentData(){
+        IBinder test = getIntent().getExtras().getBinder("text");
+        if (test instanceof BundleData) {
+            Object data = ((BundleData) test).getData();
+            if (data instanceof byte[]){
+                Log.d("getIntentData", "data = " + ((byte[]) data).length);
+            }
+
+        }
+
     }
 }
