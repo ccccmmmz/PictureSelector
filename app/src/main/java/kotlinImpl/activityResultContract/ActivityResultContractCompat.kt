@@ -28,10 +28,16 @@ class ActivityResultContractCompat(private val activityResultCaller: ActivityRes
         } as? FragmentActivity
     }
 
+    /**
+     * startActivity callback
+     */
     private val mStartActivityForResult by lazy { ActivityResultContracts.StartActivityForResult() }
     private var mActivityResultLauncher : ActivityResultLauncher<Intent>? = null
     private var callback: ActivityResultCallback<ActivityResult>? = null
 
+    /**
+     * android 权限请求回调
+     */
     private val mPermissionContract by lazy { ActivityResultContracts.RequestMultiplePermissions() }
     private var mPermissionCallback : ActivityResultCallback<Map<String, Boolean>>? = null
     private var mPermissionLauncher : ActivityResultLauncher<Array<String>>? = null

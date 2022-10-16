@@ -58,6 +58,10 @@ class CommonAdapter<T> : RecyclerView.Adapter<BusinessHolder<T>>() {
     ) {
         if (payloads.size != 0) {
             // pending payload
+            val payload = payloads[0]
+            if (payload is PayloadAction) {
+                payload.consumePayload(holder)
+            }
             return
         }
         super.onBindViewHolder(holder, position, payloads)
@@ -104,4 +108,8 @@ class CommonAdapter<T> : RecyclerView.Adapter<BusinessHolder<T>>() {
 
     }
 
+}
+
+interface PayloadAction{
+    fun consumePayload(viewHolder: RecyclerView.ViewHolder)
 }
