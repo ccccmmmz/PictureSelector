@@ -37,7 +37,6 @@ public class ImmersiveManager {
 
 
     /**
-     * @param baseActivity
      * @param statusBarColor     状态栏的颜色
      * @param navigationBarColor 导航栏的颜色
      */
@@ -45,7 +44,7 @@ public class ImmersiveManager {
             , boolean isMarginNavigationBar, int statusBarColor, int navigationBarColor, boolean isDarkStatusBarIcon) {
         try {
             Window window = baseActivity.getWindow();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                 //4.4版本及以上 5.0版本及以下
                 if (isDarkStatusBarIcon) {
                     initBarBelowLOLLIPOP(baseActivity);
@@ -54,7 +53,7 @@ public class ImmersiveManager {
                             WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS,
                             WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
                 }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            } else {
                 if (isMarginStatusBar && isMarginNavigationBar) {
                     //5.0版本及以上
                     window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
@@ -112,17 +111,21 @@ public class ImmersiveManager {
     /**
      * 透明状态栏
      *
-     * @param activity
-     * @param isDarkStatusBarBlack
+     * @param activity activity
+     * @param isDarkStatusBarBlack isDarkStatusBarBlack
      */
     public static void translucentStatusBar(Activity activity, boolean isDarkStatusBarBlack) {
         Window window = activity.getWindow();
         //添加Flag把状态栏设为可绘制模式
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        }
         //如果为全透明模式，取消设置Window半透明的Flag
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         //设置状态栏为透明
-        window.setStatusBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            window.setStatusBarColor(Color.TRANSPARENT);
+        }
         View decor = window.getDecorView();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //设置window的状态栏不可见,且状态栏字体是白色
