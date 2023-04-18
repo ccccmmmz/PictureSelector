@@ -9,10 +9,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.luck.picture.lib.R;
 import com.luck.picture.lib.adapter.holder.BasePreviewHolder;
-import com.luck.picture.lib.adapter.holder.PreviewAudioHolder;
 import com.luck.picture.lib.adapter.holder.PreviewVideoHolder;
 import com.luck.picture.lib.config.InjectResourceSource;
 import com.luck.picture.lib.config.PictureMimeType;
+import com.luck.picture.lib.config.SelectorConfig;
+import com.luck.picture.lib.config.SelectorProviders;
 import com.luck.picture.lib.entity.LocalMedia;
 
 import java.util.LinkedHashMap;
@@ -28,6 +29,15 @@ public class PicturePreviewAdapter extends RecyclerView.Adapter<BasePreviewHolde
     private List<LocalMedia> mData;
     private BasePreviewHolder.OnPreviewEventListener onPreviewEventListener;
     private final LinkedHashMap<Integer, BasePreviewHolder> mHolderCache = new LinkedHashMap<>();
+    private final SelectorConfig selectorConfig;
+
+    public PicturePreviewAdapter() {
+        this(SelectorProviders.getInstance().getSelectorConfig());
+    }
+
+    public PicturePreviewAdapter(SelectorConfig config) {
+        this.selectorConfig = config;
+    }
 
     public BasePreviewHolder getCurrentHolder(int position) {
         return mHolderCache.get(position);
@@ -46,13 +56,13 @@ public class PicturePreviewAdapter extends RecyclerView.Adapter<BasePreviewHolde
     public BasePreviewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         int layoutResourceId;
         if (viewType == BasePreviewHolder.ADAPTER_TYPE_VIDEO) {
-            layoutResourceId = InjectResourceSource.getLayoutResource(parent.getContext(), InjectResourceSource.PREVIEW_ITEM_VIDEO_LAYOUT_RESOURCE);
+            layoutResourceId = InjectResourceSource.getLayoutResource(parent.getContext(), InjectResourceSource.PREVIEW_ITEM_VIDEO_LAYOUT_RESOURCE, selectorConfig);
             return BasePreviewHolder.generate(parent, viewType, layoutResourceId != InjectResourceSource.DEFAULT_LAYOUT_RESOURCE ? layoutResourceId : R.layout.ps_preview_video);
         } else if (viewType == BasePreviewHolder.ADAPTER_TYPE_AUDIO) {
-            layoutResourceId = InjectResourceSource.getLayoutResource(parent.getContext(), InjectResourceSource.PREVIEW_ITEM_AUDIO_LAYOUT_RESOURCE);
+            layoutResourceId = InjectResourceSource.getLayoutResource(parent.getContext(), InjectResourceSource.PREVIEW_ITEM_AUDIO_LAYOUT_RESOURCE, selectorConfig);
             return BasePreviewHolder.generate(parent, viewType, layoutResourceId != InjectResourceSource.DEFAULT_LAYOUT_RESOURCE ? layoutResourceId : R.layout.ps_preview_audio);
         } else {
-            layoutResourceId = InjectResourceSource.getLayoutResource(parent.getContext(), InjectResourceSource.PREVIEW_ITEM_IMAGE_LAYOUT_RESOURCE);
+            layoutResourceId = InjectResourceSource.getLayoutResource(parent.getContext(), InjectResourceSource.PREVIEW_ITEM_IMAGE_LAYOUT_RESOURCE, selectorConfig);
             return BasePreviewHolder.generate(parent, viewType, layoutResourceId != InjectResourceSource.DEFAULT_LAYOUT_RESOURCE ? layoutResourceId : R.layout.ps_preview_image);
         }
     }
@@ -153,10 +163,7 @@ public class PicturePreviewAdapter extends RecyclerView.Adapter<BasePreviewHolde
      */
     public boolean isPlaying(int position) {
         BasePreviewHolder currentHolder = getCurrentHolder(position);
-        if (currentHolder instanceof PreviewVideoHolder) {
-            return ((PreviewVideoHolder) currentHolder).isPlaying();
-        }
-        return false;
+        return currentHolder != null && currentHolder.isPlaying();
     }
 
     /**
@@ -165,12 +172,8 @@ public class PicturePreviewAdapter extends RecyclerView.Adapter<BasePreviewHolde
     public void destroy() {
         for (Integer key : mHolderCache.keySet()) {
             BasePreviewHolder holder = mHolderCache.get(key);
-            if (holder instanceof PreviewVideoHolder) {
-                PreviewVideoHolder videoHolder = (PreviewVideoHolder) holder;
-                videoHolder.releaseVideo();
-            } else if (holder instanceof PreviewAudioHolder) {
-                PreviewAudioHolder audioHolder = (PreviewAudioHolder) holder;
-                audioHolder.releaseAudio();
+            if (holder != null) {
+                holder.release();
             }
         }
     }

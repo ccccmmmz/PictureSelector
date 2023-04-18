@@ -11,7 +11,8 @@ import androidx.core.content.ContextCompat;
 
 import com.luck.picture.lib.PictureSelectorFragment;
 import com.luck.picture.lib.R;
-import com.luck.picture.lib.config.PictureSelectionConfig;
+import com.luck.picture.lib.config.SelectorConfig;
+import com.luck.picture.lib.config.SelectorProviders;
 import com.luck.picture.lib.immersive.ImmersiveManager;
 import com.luck.picture.lib.language.LanguageConfig;
 import com.luck.picture.lib.language.PictureLanguageUtils;
@@ -25,18 +26,23 @@ import com.luck.picture.lib.utils.StyleUtils;
  * @describe：PictureSelectorSupporterActivity
  */
 public class PictureSelectorSupporterActivity extends AppCompatActivity {
-
+    private SelectorConfig selectorConfig;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initSelectorConfig();
         immersive();
         setContentView(R.layout.ps_activity_container);
         setupFragment();
     }
 
+    private void initSelectorConfig() {
+        selectorConfig = SelectorProviders.getInstance().getSelectorConfig();
+    }
+
     private void immersive() {
-        SelectMainStyle mainStyle = PictureSelectionConfig.selectorStyle.getSelectMainStyle();
+        SelectMainStyle mainStyle = selectorConfig.selectorStyle.getSelectMainStyle();
         int statusBarColor = mainStyle.getStatusBarColor();
         int navigationBarColor = mainStyle.getNavigationBarColor();
         boolean isDarkStatusBarBlack = mainStyle.isDarkStatusBarBlack();
@@ -58,9 +64,8 @@ public class PictureSelectorSupporterActivity extends AppCompatActivity {
      * set app language
      */
     public void initAppLanguage() {
-        PictureSelectionConfig config = PictureSelectionConfig.getInstance();
-        if (config.language != LanguageConfig.UNKNOWN_LANGUAGE && !config.isOnlyCamera) {
-            PictureLanguageUtils.setAppLanguage(this, config.language);
+        if (selectorConfig != null && selectorConfig.language != LanguageConfig.UNKNOWN_LANGUAGE && !selectorConfig.isOnlyCamera) {
+            PictureLanguageUtils.setAppLanguage(this, selectorConfig.language, selectorConfig.defaultLanguage);
         }
     }
 
@@ -72,14 +77,20 @@ public class PictureSelectorSupporterActivity extends AppCompatActivity {
 
     @Override
     protected void attachBaseContext(Context newBase) {
-        super.attachBaseContext(PictureContextWrapper.wrap(newBase,
-                PictureSelectionConfig.getInstance().language));
+        SelectorConfig selectorConfig = SelectorProviders.getInstance().getSelectorConfig();
+        if (selectorConfig != null) {
+            super.attachBaseContext(PictureContextWrapper.wrap(newBase, selectorConfig.language, selectorConfig.defaultLanguage));
+        } else {
+            super.attachBaseContext(newBase);
+        }
     }
 
     @Override
     public void finish() {
         super.finish();
-        PictureWindowAnimationStyle windowAnimationStyle = PictureSelectionConfig.selectorStyle.getWindowAnimationStyle();
-        overridePendingTransition(0, windowAnimationStyle.activityExitAnimation);
+        if (selectorConfig != null) {
+            PictureWindowAnimationStyle windowAnimationStyle = selectorConfig.selectorStyle.getWindowAnimationStyle();
+            overridePendingTransition(0, windowAnimationStyle.activityExitAnimation);
+        }
     }
 }

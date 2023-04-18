@@ -42,10 +42,9 @@ import java.util.Objects;
 
 public class PictureFileUtils {
     private static final int BYTE_SIZE = 1024;
-    public static final String POSTFIX_JPG = ".jpg";
-    public static final String POSTFIX_MP4 = ".mp4";
-    public static final String POSTFIX_AMR = ".amr";
-
+    private static final String POSTFIX_JPG = ".jpg";
+    private static final String POSTFIX_MP4 = ".mp4";
+    private static final String POSTFIX_AMR = ".amr";
 
     /**
      * @param context
@@ -132,14 +131,8 @@ public class PictureFileUtils {
      * @return
      */
     private static File getRootDirFile(Context context, int type) {
-        switch (type) {
-            case SelectMimeType.TYPE_VIDEO:
-                return context.getExternalFilesDir(Environment.DIRECTORY_MOVIES);
-            case SelectMimeType.TYPE_AUDIO:
-                return context.getExternalFilesDir(Environment.DIRECTORY_MUSIC);
-            default:
-                return context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        }
+        String fileDirPath = FileDirMap.getFileDirPath(context, type);
+        return new File(fileDirPath);
     }
 
     /**
@@ -443,41 +436,6 @@ public class PictureFileUtils {
         }
     }
 
-    /**
-     * @param ctx
-     * @return
-     */
-    public static String getDiskCacheDir(Context ctx) {
-        File filesDir = ctx.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        if (filesDir == null) {
-            return "";
-        }
-        return filesDir.getPath();
-    }
-
-    /**
-     * @param ctx
-     * @return
-     */
-    public static String getVideoDiskCacheDir(Context ctx) {
-        File filesDir = ctx.getExternalFilesDir(Environment.DIRECTORY_MOVIES);
-        if (filesDir == null) {
-            return "";
-        }
-        return filesDir.getPath();
-    }
-
-    /**
-     * @param ctx
-     * @return
-     */
-    public static String getAudioDiskCacheDir(Context ctx) {
-        File filesDir = ctx.getExternalFilesDir(Environment.DIRECTORY_MUSIC);
-        if (filesDir == null) {
-            return "";
-        }
-        return filesDir.getPath();
-    }
 
     /**
      * 生成uri
@@ -502,44 +460,28 @@ public class PictureFileUtils {
      * 根据类型创建文件名
      *
      * @param context
-     * @param md5
      * @param mineType
      * @param customFileName
      * @return
      */
-    public static String createFilePath(Context context, String md5, String mineType, String customFileName) {
-        String suffix = PictureMimeType.getLastImgSuffix(mineType);
+    public static String createFilePath(Context context, String mineType, String customFileName) {
+        File filesDir;
+        String prefixTAG;
+        String suffix = PictureMimeType.getLastSourceSuffix(mineType);
         if (PictureMimeType.isHasVideo(mineType)) {
             // 视频
-            String filesDir = PictureFileUtils.getVideoDiskCacheDir(context) + File.separator;
-            if (TextUtils.isEmpty(md5)) {
-                String fileName = TextUtils.isEmpty(customFileName) ? DateUtils.getCreateFileName("VID_") + suffix : customFileName;
-                return filesDir + fileName;
-            } else {
-                String fileName = TextUtils.isEmpty(customFileName) ? "VID_" + md5.toUpperCase() + suffix : customFileName;
-                return filesDir + fileName;
-            }
+            prefixTAG = "VID_";
+            filesDir = getRootDirFile(context, SelectMimeType.TYPE_VIDEO);
         } else if (PictureMimeType.isHasAudio(mineType)) {
             // 音频
-            String filesDir = PictureFileUtils.getAudioDiskCacheDir(context) + File.separator;
-            if (TextUtils.isEmpty(md5)) {
-                String fileName = TextUtils.isEmpty(customFileName) ? DateUtils.getCreateFileName("AUD_") + suffix : customFileName;
-                return filesDir + fileName;
-            } else {
-                String fileName = TextUtils.isEmpty(customFileName) ? "AUD_" + md5.toUpperCase() + suffix : customFileName;
-                return filesDir + fileName;
-            }
+            prefixTAG = "AUD_";
+            filesDir = getRootDirFile(context, SelectMimeType.TYPE_AUDIO);
         } else {
             // 图片
-            String filesDir = PictureFileUtils.getDiskCacheDir(context) + File.separator;
-            if (TextUtils.isEmpty(md5)) {
-                String fileName = TextUtils.isEmpty(customFileName) ? DateUtils.getCreateFileName("IMG_") + suffix : customFileName;
-                return filesDir + fileName;
-            } else {
-                String fileName = TextUtils.isEmpty(customFileName) ? "IMG_" + md5.toUpperCase() + suffix : customFileName;
-                return filesDir + fileName;
-            }
+            prefixTAG = "IMG_";
+            filesDir = getRootDirFile(context, SelectMimeType.TYPE_IMAGE);
         }
+        return filesDir.getPath() + File.separator + (TextUtils.isEmpty(customFileName) ? DateUtils.getCreateFileName(prefixTAG) + suffix : customFileName);
     }
 
     /**
@@ -612,29 +554,24 @@ public class PictureFileUtils {
      */
     @SuppressLint("DefaultLocale")
     public static String formatAccurateUnitFileSize(final long byteSize) {
+        String unit = "";
+        double newByteSize;
         if (byteSize < 0) {
             throw new IllegalArgumentException("byteSize shouldn't be less than zero!");
         } else if (byteSize < FileSizeUnit.ACCURATE_KB) {
-            String format = String.format("%." + 2 + "f", (double) byteSize);
-            double num = ValueOf.toDouble(format);
-            long round = Math.round(num);
-            return (round - num == 0 ? round : format) + "B";
+            newByteSize = (double) byteSize;
         } else if (byteSize < FileSizeUnit.ACCURATE_MB) {
-            String format = String.format("%." + 2 + "f", (double) byteSize / FileSizeUnit.ACCURATE_KB);
-            double num = ValueOf.toDouble(format);
-            long round = Math.round(num);
-            return (round - num == 0 ? round : format) + "KB";
+            unit = "KB";
+            newByteSize = (double) byteSize / FileSizeUnit.ACCURATE_KB;
         } else if (byteSize < FileSizeUnit.ACCURATE_GB) {
-            String format = String.format("%." + 2 + "f", (double) byteSize / FileSizeUnit.ACCURATE_MB);
-            double num = ValueOf.toDouble(format);
-            long round = Math.round(num);
-            return (round - num == 0 ? round : format) + "MB";
+            unit = "MB";
+            newByteSize = (double) byteSize / FileSizeUnit.ACCURATE_MB;
         } else {
-            String format = String.format("%." + 2 + "f", (double) byteSize / FileSizeUnit.ACCURATE_GB);
-            double num = ValueOf.toDouble(format);
-            long round = Math.round(num);
-            return (round - num == 0 ? round : format) + "GB";
+            unit = "GB";
+            newByteSize = (double) byteSize / FileSizeUnit.ACCURATE_GB;
         }
+        String format = String.format(new Locale("zh"), "%." + 2 + "f", newByteSize);
+        return (Math.round(ValueOf.toDouble(format)) - ValueOf.toDouble(format) == 0 ? Math.round(ValueOf.toDouble(format)) : format) + unit;
     }
 
 

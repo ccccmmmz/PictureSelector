@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.display.DisplayManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -31,6 +32,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraControl;
@@ -79,7 +81,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -369,7 +373,11 @@ public class CustomCameraView extends RelativeLayout implements CameraXOrientati
                 tvCurrentTime.setVisibility(GONE);
                 mCaptureLayout.resetCaptureLayout();
                 mCaptureLayout.setTextWithAnimation(getContext().getString(R.string.picture_recording_time_is_short));
-                mVideoCapture.stopRecording();
+                try {
+                    mVideoCapture.stopRecording();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             @Override
@@ -413,6 +421,7 @@ public class CustomCameraView extends RelativeLayout implements CameraXOrientati
                                 outPutCameraFileName, imageFormat, outPutCameraDir);
                         if (FileUtils.copyPath(activity, outputPath, cameraFile.getAbsolutePath())) {
                             outputPath = cameraFile.getAbsolutePath();
+                            SimpleCameraX.putOutputUri(activity.getIntent(), Uri.fromFile(cameraFile));
                         }
                     }
                 }
@@ -490,6 +499,9 @@ public class CustomCameraView extends RelativeLayout implements CameraXOrientati
      */
     public void setCameraConfig(Intent intent) {
         Bundle extras = intent.getExtras();
+        if (extras == null) {
+            return;
+        }
         boolean isCameraAroundState = extras.getBoolean(SimpleCameraX.EXTRA_CAMERA_AROUND_STATE, false);
         buttonFeatures = extras.getInt(SimpleCameraX.EXTRA_CAMERA_MODE, CustomCameraConfig.BUTTON_STATE_BOTH);
         lensFacing = isCameraAroundState ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK;
@@ -645,17 +657,38 @@ public class CustomCameraView extends RelativeLayout implements CameraXOrientati
      * 初始相机预览模式
      */
     private void bindCameraUseCases() {
-        switch (buttonFeatures) {
-            case CustomCameraConfig.BUTTON_STATE_ONLY_CAPTURE:
-                bindCameraImageUseCases();
-                break;
-            case CustomCameraConfig.BUTTON_STATE_ONLY_RECORDER:
+        if (null != mCameraProvider && isBackCameraLevel3Device(mCameraProvider)) {
+            if (CustomCameraConfig.BUTTON_STATE_ONLY_RECORDER == buttonFeatures) {
                 bindCameraVideoUseCases();
-                break;
-            default:
-                bindCameraWithUserCases();
-                break;
+            } else {
+                bindCameraImageUseCases();
+            }
+        } else {
+            switch (buttonFeatures) {
+                case CustomCameraConfig.BUTTON_STATE_ONLY_CAPTURE:
+                    bindCameraImageUseCases();
+                    break;
+                case CustomCameraConfig.BUTTON_STATE_ONLY_RECORDER:
+                    bindCameraVideoUseCases();
+                    break;
+                default:
+                    bindCameraWithUserCases();
+                    break;
+            }
         }
+    }
+
+    @SuppressLint("UnsafeOptInUsageError")
+    private boolean isBackCameraLevel3Device(ProcessCameraProvider cameraProvider) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            List<CameraInfo> cameraInfos = CameraSelector.DEFAULT_BACK_CAMERA
+                    .filter(cameraProvider.getAvailableCameraInfos());
+            if (!cameraInfos.isEmpty()) {
+                return  Objects.equals(Camera2CameraInfo.from(cameraInfos.get(0)).getCameraCharacteristic(
+                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL), CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY);
+            }
+        }
+        return false;
     }
 
     /**
@@ -908,13 +941,13 @@ public class CustomCameraView extends RelativeLayout implements CameraXOrientati
                         // 这种角度拍出来的图片宽比高大，所以使用ScaleType.FIT_CENTER缩放模式
                         if (targetRotation == Surface.ROTATION_90 || targetRotation == Surface.ROTATION_270) {
                             mImagePreview.setAdjustViewBounds(true);
-                            View mImagePreviewBackground = mImagePreviewBgReference.get();
-                            if (mImagePreviewBackground != null) {
-                                mImagePreviewBackground.animate().alpha(1F).setDuration(220).start();
-                            }
                         } else {
                             mImagePreview.setAdjustViewBounds(false);
-                            mImagePreview.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                            mImagePreview.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                        }
+                        View mImagePreviewBackground = mImagePreviewBgReference.get();
+                        if (mImagePreviewBackground != null) {
+                            mImagePreviewBackground.animate().alpha(1F).setDuration(220).start();
                         }
                     }
                     ImageCallbackListener imageCallbackListener = mImageCallbackListenerReference.get();

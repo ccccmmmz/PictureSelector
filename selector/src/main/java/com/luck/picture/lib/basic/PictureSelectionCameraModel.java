@@ -6,7 +6,6 @@ import android.content.Intent;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContract;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
@@ -14,9 +13,10 @@ import androidx.fragment.app.FragmentManager;
 import com.luck.picture.lib.PictureOnlyCameraFragment;
 import com.luck.picture.lib.R;
 import com.luck.picture.lib.config.FileSizeUnit;
-import com.luck.picture.lib.config.PictureSelectionConfig;
+import com.luck.picture.lib.config.SelectorConfig;
 import com.luck.picture.lib.config.SelectMimeType;
 import com.luck.picture.lib.config.SelectModeConfig;
+import com.luck.picture.lib.config.SelectorProviders;
 import com.luck.picture.lib.config.VideoQuality;
 import com.luck.picture.lib.engine.CompressEngine;
 import com.luck.picture.lib.engine.CompressFileEngine;
@@ -49,12 +49,13 @@ import java.util.List;
  * @describe：PictureSelectionCameraModel
  */
 public final class PictureSelectionCameraModel {
-    private final PictureSelectionConfig selectionConfig;
+    private final SelectorConfig selectionConfig;
     private final PictureSelector selector;
 
     public PictureSelectionCameraModel(PictureSelector selector, int chooseMode) {
         this.selector = selector;
-        selectionConfig = PictureSelectionConfig.getCleanInstance();
+        selectionConfig = new SelectorConfig();
+        SelectorProviders.getInstance().addSelectorConfigQueue(selectionConfig);
         selectionConfig.chooseMode = chooseMode;
         selectionConfig.isOnlyCamera = true;
         selectionConfig.isDisplayTimeAxis = false;
@@ -75,6 +76,17 @@ public final class PictureSelectionCameraModel {
     }
 
     /**
+     * Set App default Language
+     *
+     * @param defaultLanguage default language {@link LanguageConfig}
+     * @return PictureSelectionModel
+     */
+    public PictureSelectionCameraModel setDefaultLanguage(int defaultLanguage) {
+        selectionConfig.defaultLanguage = defaultLanguage;
+        return this;
+    }
+
+    /**
      * Image Compress the engine
      *
      * @param engine Image Compress the engine
@@ -83,7 +95,7 @@ public final class PictureSelectionCameraModel {
      */
     @Deprecated
     public PictureSelectionCameraModel setCompressEngine(CompressEngine engine) {
-        PictureSelectionConfig.compressEngine = engine;
+        selectionConfig.compressEngine = engine;
         selectionConfig.isCompressEngine = true;
         return this;
     }
@@ -95,7 +107,7 @@ public final class PictureSelectionCameraModel {
      * @return
      */
     public PictureSelectionCameraModel setCompressEngine(CompressFileEngine engine) {
-        PictureSelectionConfig.compressFileEngine = engine;
+        selectionConfig.compressFileEngine = engine;
         selectionConfig.isCompressEngine = true;
         return this;
     }
@@ -109,7 +121,7 @@ public final class PictureSelectionCameraModel {
      */
     @Deprecated
     public PictureSelectionCameraModel setCropEngine(CropEngine engine) {
-        PictureSelectionConfig.cropEngine = engine;
+        selectionConfig.cropEngine = engine;
         return this;
     }
 
@@ -120,7 +132,7 @@ public final class PictureSelectionCameraModel {
      * @return
      */
     public PictureSelectionCameraModel setCropEngine(CropFileEngine engine) {
-        PictureSelectionConfig.cropFileEngine = engine;
+        selectionConfig.cropFileEngine = engine;
         return this;
     }
 
@@ -134,7 +146,7 @@ public final class PictureSelectionCameraModel {
     @Deprecated
     public PictureSelectionCameraModel setSandboxFileEngine(SandboxFileEngine engine) {
         if (SdkVersionUtils.isQ()) {
-            PictureSelectionConfig.sandboxFileEngine = engine;
+            selectionConfig.sandboxFileEngine = engine;
             selectionConfig.isSandboxFileEngine = true;
         } else {
             selectionConfig.isSandboxFileEngine = false;
@@ -150,7 +162,7 @@ public final class PictureSelectionCameraModel {
      */
     public PictureSelectionCameraModel setSandboxFileEngine(UriToFileTransformEngine engine) {
         if (SdkVersionUtils.isQ()) {
-            PictureSelectionConfig.uriToFileTransformEngine = engine;
+            selectionConfig.uriToFileTransformEngine = engine;
             selectionConfig.isSandboxFileEngine = true;
         } else {
             selectionConfig.isSandboxFileEngine = false;
@@ -159,13 +171,29 @@ public final class PictureSelectionCameraModel {
     }
 
     /**
+     * Change the desired orientation of this activity.  If the activity
+     * is currently in the foreground or otherwise impacting the screen
+     * orientation, the screen will immediately be changed (possibly causing
+     * the activity to be restarted). Otherwise, this will be used the next
+     * time the activity is visible.
+     *
+     * @param requestedOrientation An orientation constant as used in
+     *                             {@link android.content.pm.ActivityInfo.screenOrientation ActivityInfo.screenOrientation}.
+     */
+    public PictureSelectionCameraModel setRequestedOrientation(int requestedOrientation) {
+        selectionConfig.requestedOrientation = requestedOrientation;
+        return this;
+    }
+
+
+    /**
      * Intercept camera click events, and users can implement their own camera framework
      *
      * @param listener
      * @return
      */
     public PictureSelectionCameraModel setCameraInterceptListener(OnCameraInterceptListener listener) {
-        PictureSelectionConfig.onCameraInterceptListener = listener;
+        selectionConfig.onCameraInterceptListener = listener;
         return this;
     }
 
@@ -176,7 +204,7 @@ public final class PictureSelectionCameraModel {
      * @return
      */
     public PictureSelectionCameraModel setRecordAudioInterceptListener(OnRecordAudioInterceptListener listener) {
-        PictureSelectionConfig.onRecordAudioListener = listener;
+        selectionConfig.onRecordAudioListener = listener;
         return this;
     }
 
@@ -187,7 +215,7 @@ public final class PictureSelectionCameraModel {
      * @return
      */
     public PictureSelectionCameraModel setPermissionsInterceptListener(OnPermissionsInterceptListener listener) {
-        PictureSelectionConfig.onPermissionsEventListener = listener;
+        selectionConfig.onPermissionsEventListener = listener;
         return this;
     }
 
@@ -198,7 +226,7 @@ public final class PictureSelectionCameraModel {
      * @return
      */
     public PictureSelectionCameraModel setPermissionDescriptionListener(OnPermissionDescriptionListener listener) {
-        PictureSelectionConfig.onPermissionDescriptionListener = listener;
+        selectionConfig.onPermissionDescriptionListener = listener;
         return this;
     }
 
@@ -209,7 +237,7 @@ public final class PictureSelectionCameraModel {
      * @return
      */
     public PictureSelectionCameraModel setPermissionDeniedListener(OnPermissionDeniedListener listener) {
-        PictureSelectionConfig.onPermissionDeniedListener = listener;
+        selectionConfig.onPermissionDeniedListener = listener;
         return this;
     }
 
@@ -217,10 +245,9 @@ public final class PictureSelectionCameraModel {
      * Custom limit tips
      *
      * @param listener
-     * @return
      */
     public PictureSelectionCameraModel setSelectLimitTipsListener(OnSelectLimitTipsListener listener) {
-        PictureSelectionConfig.onSelectLimitTipsListener = listener;
+        selectionConfig.onSelectLimitTipsListener = listener;
         return this;
     }
 
@@ -232,7 +259,7 @@ public final class PictureSelectionCameraModel {
      */
     public PictureSelectionCameraModel setAddBitmapWatermarkListener(OnBitmapWatermarkEventListener listener) {
         if (selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
-            PictureSelectionConfig.onBitmapWatermarkListener = listener;
+            selectionConfig.onBitmapWatermarkListener = listener;
         }
         return this;
     }
@@ -245,7 +272,7 @@ public final class PictureSelectionCameraModel {
      */
     public PictureSelectionCameraModel setVideoThumbnailListener(OnVideoThumbnailEventListener listener) {
         if (selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
-            PictureSelectionConfig.onVideoThumbnailEventListener = listener;
+            selectionConfig.onVideoThumbnailEventListener = listener;
         }
         return this;
     }
@@ -257,7 +284,7 @@ public final class PictureSelectionCameraModel {
      * @return
      */
     public PictureSelectionCameraModel setCustomLoadingListener(OnCustomLoadingListener listener) {
-        PictureSelectionConfig.onCustomLoadingListener = listener;
+        selectionConfig.onCustomLoadingListener = listener;
         return this;
     }
 
@@ -328,6 +355,25 @@ public final class PictureSelectionCameraModel {
         return this;
     }
 
+    /**
+     * Select the maximum number of files
+     *
+     * @param maxSelectNum PictureSelector max selection
+     */
+    private PictureSelectionCameraModel setMaxSelectNum(int maxSelectNum) {
+        selectionConfig.maxSelectNum = selectionConfig.selectionMode == SelectModeConfig.SINGLE ? 1 : maxSelectNum;
+        return this;
+    }
+
+    /**
+     * Select the maximum video number of files
+     *
+     * @param maxVideoSelectNum PictureSelector video max selection
+     */
+    public PictureSelectionCameraModel setMaxVideoSelectNum(int maxVideoSelectNum) {
+        selectionConfig.maxVideoSelectNum = selectionConfig.chooseMode == SelectMimeType.ofVideo() ? 0 : maxVideoSelectNum;
+        return this;
+    }
 
     /**
      * # file size The unit is KB
@@ -512,10 +558,12 @@ public final class PictureSelectionCameraModel {
         if (selectedList == null) {
             return this;
         }
+        setMaxSelectNum(selectedList.size() + 1);
+        setMaxVideoSelectNum(selectedList.size() + 1);
         if (selectionConfig.selectionMode == SelectModeConfig.SINGLE && selectionConfig.isDirectReturnSingle) {
-            SelectedManager.clearSelectResult();
+            selectionConfig.selectedResult.clear();
         } else {
-            SelectedManager.addAllSelectResult(new ArrayList<>(selectedList));
+            selectionConfig.addAllSelectResult(new ArrayList<>(selectedList));
         }
         return this;
     }
@@ -567,9 +615,7 @@ public final class PictureSelectionCameraModel {
             selectionConfig.isResultListenerBack = false;
             selectionConfig.isActivityResultBack = true;
             FragmentManager fragmentManager = null;
-            if (activity instanceof AppCompatActivity) {
-                fragmentManager = ((AppCompatActivity) activity).getSupportFragmentManager();
-            } else if (activity instanceof FragmentActivity) {
+            if (activity instanceof FragmentActivity) {
                 fragmentManager = ((FragmentActivity) activity).getSupportFragmentManager();
             }
             if (fragmentManager == null) {
@@ -610,11 +656,9 @@ public final class PictureSelectionCameraModel {
             // 绑定回调监听
             selectionConfig.isResultListenerBack = true;
             selectionConfig.isActivityResultBack = false;
-            PictureSelectionConfig.onResultCallListener = call;
+            selectionConfig.onResultCallListener = call;
             FragmentManager fragmentManager = null;
-            if (activity instanceof AppCompatActivity) {
-                fragmentManager = ((AppCompatActivity) activity).getSupportFragmentManager();
-            } else if (activity instanceof FragmentActivity) {
+            if (activity instanceof FragmentActivity) {
                 fragmentManager = ((FragmentActivity) activity).getSupportFragmentManager();
             }
             if (fragmentManager == null) {
@@ -649,7 +693,7 @@ public final class PictureSelectionCameraModel {
         // 绑定回调监听
         selectionConfig.isResultListenerBack = false;
         selectionConfig.isActivityResultBack = true;
-        PictureSelectionConfig.onResultCallListener = null;
+        selectionConfig.onResultCallListener = null;
         return new PictureOnlyCameraFragment();
     }
 
@@ -671,11 +715,9 @@ public final class PictureSelectionCameraModel {
         // 绑定回调监听
         selectionConfig.isResultListenerBack = true;
         selectionConfig.isActivityResultBack = false;
-        PictureSelectionConfig.onResultCallListener = call;
+        selectionConfig.onResultCallListener = call;
         FragmentManager fragmentManager = null;
-        if (activity instanceof AppCompatActivity) {
-            fragmentManager = ((AppCompatActivity) activity).getSupportFragmentManager();
-        } else if (activity instanceof FragmentActivity) {
+        if (activity instanceof FragmentActivity) {
             fragmentManager = ((FragmentActivity) activity).getSupportFragmentManager();
         }
         if (fragmentManager == null) {
@@ -765,7 +807,7 @@ public final class PictureSelectionCameraModel {
             // 绑定回调监听
             selectionConfig.isResultListenerBack = true;
             selectionConfig.isActivityResultBack = false;
-            PictureSelectionConfig.onResultCallListener = call;
+            selectionConfig.onResultCallListener = call;
             Intent intent = new Intent(activity, PictureSelectorTransparentActivity.class);
             activity.startActivity(intent);
             activity.overridePendingTransition(R.anim.ps_anim_fade_in, 0);

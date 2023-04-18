@@ -167,7 +167,7 @@ public class MediaUtils {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true;
             if (PictureMimeType.isContent(url)) {
-                inputStream = PictureContentResolver.getContentResolverOpenInputStream(PictureAppMaster.getInstance().getAppContext(), Uri.parse(url));
+                inputStream = PictureContentResolver.openInputStream(PictureAppMaster.getInstance().getAppContext(), Uri.parse(url));
             } else {
                 inputStream = new FileInputStream(url);
             }
@@ -198,7 +198,7 @@ public class MediaUtils {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true;
             if (PictureMimeType.isContent(url)) {
-                inputStream = PictureContentResolver.getContentResolverOpenInputStream(context, Uri.parse(url));
+                inputStream = PictureContentResolver.openInputStream(context, Uri.parse(url));
             } else {
                 inputStream = new FileInputStream(url);
             }
@@ -211,6 +211,31 @@ public class MediaUtils {
             PictureFileUtils.close(inputStream);
         }
         return mediaExtraInfo;
+    }
+
+    /**
+     * get Local image width or height
+     *
+     * @param context
+     * @param url
+     * @param call
+     */
+    public static void getImageSize(Context context, String url, OnCallbackListener<MediaExtraInfo> call) {
+        PictureThreadUtils.executeByIo(new PictureThreadUtils.SimpleTask<MediaExtraInfo>() {
+
+            @Override
+            public MediaExtraInfo doInBackground() {
+                return getImageSize(context, url);
+            }
+
+            @Override
+            public void onSuccess(MediaExtraInfo result) {
+                PictureThreadUtils.cancel(this);
+                if (call != null) {
+                    call.onCall(result);
+                }
+            }
+        });
     }
 
     /**
@@ -274,7 +299,11 @@ public class MediaUtils {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            retriever.release();
+            try {
+                retriever.release();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         return mediaExtraInfo;
     }
@@ -302,7 +331,11 @@ public class MediaUtils {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            retriever.release();
+            try {
+                retriever.release();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         return mediaExtraInfo;
     }
@@ -510,7 +543,7 @@ public class MediaUtils {
      */
     public static void deleteUri(Context context, String path) {
         try {
-            if (PictureMimeType.isContent(path)) {
+            if (!TextUtils.isEmpty(path) && PictureMimeType.isContent(path)) {
                 context.getContentResolver().delete(Uri.parse(path), null, null);
             }
         } catch (Exception e) {

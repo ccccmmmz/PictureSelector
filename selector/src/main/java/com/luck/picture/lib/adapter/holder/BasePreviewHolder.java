@@ -11,9 +11,9 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.luck.picture.lib.R;
-import com.luck.picture.lib.config.PictureSelectionConfig;
+import com.luck.picture.lib.config.SelectorConfig;
+import com.luck.picture.lib.config.SelectorProviders;
 import com.luck.picture.lib.entity.LocalMedia;
-import com.luck.picture.lib.photoview.OnViewTapListener;
 import com.luck.picture.lib.photoview.PhotoView;
 import com.luck.picture.lib.utils.BitmapUtils;
 import com.luck.picture.lib.utils.DensityUtil;
@@ -43,7 +43,7 @@ public abstract class BasePreviewHolder extends RecyclerView.ViewHolder {
     protected final int screenHeight;
     protected final int screenAppInHeight;
     protected LocalMedia media;
-    protected final PictureSelectionConfig config;
+    protected final SelectorConfig selectorConfig;
     public PhotoView coverImageView;
 
     public static BasePreviewHolder generate(ViewGroup parent, int viewType, int resource) {
@@ -59,7 +59,7 @@ public abstract class BasePreviewHolder extends RecyclerView.ViewHolder {
 
     public BasePreviewHolder(@NonNull View itemView) {
         super(itemView);
-        this.config = PictureSelectionConfig.getInstance();
+        this.selectorConfig = SelectorProviders.getInstance().getSelectorConfig();
         this.screenWidth = DensityUtil.getRealScreenWidth(itemView.getContext());
         this.screenHeight = DensityUtil.getScreenHeight(itemView.getContext());
         this.screenAppInHeight = DensityUtil.getRealScreenHeight(itemView.getContext());
@@ -127,7 +127,7 @@ public abstract class BasePreviewHolder extends RecyclerView.ViewHolder {
     }
 
     protected void setScaleDisplaySize(LocalMedia media) {
-        if (!config.isPreviewZoomEffect && screenWidth < screenHeight) {
+        if (!selectorConfig.isPreviewZoomEffect && screenWidth < screenHeight) {
             if (media.getWidth() > 0 && media.getHeight() > 0) {
                 FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) coverImageView.getLayoutParams();
                 layoutParams.width = screenWidth;
@@ -148,6 +148,27 @@ public abstract class BasePreviewHolder extends RecyclerView.ViewHolder {
      * onViewDetachedFromWindow
      */
     public void onViewDetachedFromWindow() {
+
+    }
+
+    /**
+     * resume and pause play
+     */
+    public void resumePausePlay() {
+
+    }
+
+    /**
+     * play ing
+     */
+    public boolean isPlaying() {
+        return false;
+    }
+
+    /**
+     * release
+     */
+    public void release() {
 
     }
 

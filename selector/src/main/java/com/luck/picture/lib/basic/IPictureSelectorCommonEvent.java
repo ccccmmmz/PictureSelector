@@ -3,10 +3,9 @@ package com.luck.picture.lib.basic;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.luck.picture.lib.config.PictureSelectionConfig;
+import com.luck.picture.lib.config.SelectorConfig;
 import com.luck.picture.lib.config.SelectMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
-import com.luck.picture.lib.loader.IBridgeMediaLoader;
 
 import java.util.ArrayList;
 
@@ -103,6 +102,7 @@ public interface IPictureSelectorCommonEvent {
     /**
      * 验证共选类型模式可选条件
      *
+     * @param media           选中对象
      * @param isSelected      资源是否被选中
      * @param curMimeType     选择的资源类型
      * @param selectVideoSize 已选的视频数量
@@ -110,11 +110,12 @@ public interface IPictureSelectorCommonEvent {
      * @param duration        视频时长
      * @return
      */
-    boolean checkWithMimeTypeValidity(boolean isSelected, String curMimeType, int selectVideoSize, long fileSize, long duration);
+    boolean checkWithMimeTypeValidity(LocalMedia media, boolean isSelected, String curMimeType, int selectVideoSize, long fileSize, long duration);
 
     /**
      * 验证单一类型模式可选条件
      *
+     * @param media         选中对象
      * @param isSelected    资源是否被选中
      * @param curMimeType   选择的资源类型
      * @param existMimeType 已选的资源类型
@@ -122,7 +123,7 @@ public interface IPictureSelectorCommonEvent {
      * @param duration      视频时长
      * @return
      */
-    boolean checkOnlyMimeTypeValidity(boolean isSelected, String curMimeType, String existMimeType, long fileSize, long duration);
+    boolean checkOnlyMimeTypeValidity(LocalMedia media, boolean isSelected, String curMimeType, String existMimeType, long fileSize, long duration);
 
     /**
      * 选择结果数据发生改变
@@ -159,7 +160,7 @@ public interface IPictureSelectorCommonEvent {
     void sendFixedSelectedChangeEvent(LocalMedia currentMedia);
 
     /**
-     * {@link PictureSelectionConfig.selectorStyle.getSelectMainStyle().isSelectNumberStyle}
+     * {@link SelectorConfig.selectorStyle.getSelectMainStyle().isSelectNumberStyle}
      * <p>
      * isSelectNumberStyle模式下对选择结果编号进行排序
      * </p>

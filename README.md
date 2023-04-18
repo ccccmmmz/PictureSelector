@@ -3,15 +3,15 @@
    
    [简体中文🇨🇳](README_CN.md)
 
-   [Download Demo Apk](https://github.com/LuckSiege/PictureSelector/raw/version_component/app/demo/demo_2022-08-14_082114_v3.10.6.apk)<br>
+   [Download Demo Apk](https://github.com/LuckSiege/PictureSelector/raw/version_component/app/demo/demo_2023-04-16_100140_v3.11.1.apk)<br>
 
-[![Maven Central](https://img.shields.io/badge/maven%20central-v3.10.6-yellow)](https://github.com/LuckSiege)
+[![Maven Central](https://img.shields.io/badge/maven%20central-v3.11.1-yellow)](https://github.com/LuckSiege)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](https://github.com/LuckSiege)
 [![Star](https://img.shields.io/github/stars/LuckSiege/PictureSelector.svg)](https://github.com/LuckSiege/PictureSelector)
 
 
 ## Contents
--[Last version](https://github.com/LuckSiege/PictureSelector/releases/tag/v3.10.6)<br>
+-[Latest version](https://github.com/LuckSiege/PictureSelector/releases/tag/v3.11.1)<br>
 -[Download](#Download)<br>
 -[Usage](#Usage)<br>
 -[Permission](#Permission)<br>
@@ -35,16 +35,16 @@ repositories {
 
 dependencies {
   // PictureSelector basic (Necessary)
-  implementation 'io.github.lucksiege:pictureselector:v3.10.6'
+  implementation 'io.github.lucksiege:pictureselector:v3.11.1'
 
   // image compress library (Not necessary)
-  implementation 'io.github.lucksiege:compress:v3.10.6'
+  implementation 'io.github.lucksiege:compress:v3.11.1'
 
   // uCrop library (Not necessary)
-  implementation 'io.github.lucksiege:ucrop:v3.10.6'
+  implementation 'io.github.lucksiege:ucrop:v3.11.1'
 
   // simple camerax library (Not necessary)
-  implementation 'io.github.lucksiege:camerax:v3.10.6'
+  implementation 'io.github.lucksiege:camerax:v3.11.1'
 }
 ```
 
@@ -54,25 +54,25 @@ Or Maven:
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>pictureselector</artifactId>
-  <version>v3.10.6</version>
+  <version>v3.11.1</version>
 </dependency>
 
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>compress</artifactId>
-  <version>v3.10.6</version>
+  <version>v3.11.1</version>
 </dependency>
 
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>ucrop</artifactId>
-  <version>v3.10.6</version>
+  <version>v3.11.1</version>
 </dependency>
 
 <dependency>
   <groupId>io.github.lucksiege</groupId>
   <artifactId>camerax</artifactId>
-  <version>v3.10.6</version>
+  <version>v3.11.1</version>
 </dependency>
 ```
 
@@ -91,7 +91,11 @@ Permission describe，see [documentation](https://github.com/LuckSiege/PictureSe
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 <uses-permission android:name="android.permission.CAMERA" />
 <uses-permission android:name="android.permission.VIBRATE" />
-<uses-permission android:name="android.permission.BLUETOOTH" />
+
+Android 13版本适配，细化存储权限
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 ```
 
 Android 11 use camera，AndroidManifest.xm add the code：

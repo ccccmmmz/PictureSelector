@@ -8,7 +8,6 @@ import android.text.TextUtils;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContract;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
@@ -18,9 +17,10 @@ import com.luck.picture.lib.R;
 import com.luck.picture.lib.animators.AnimationType;
 import com.luck.picture.lib.config.FileSizeUnit;
 import com.luck.picture.lib.config.PictureConfig;
-import com.luck.picture.lib.config.PictureSelectionConfig;
+import com.luck.picture.lib.config.SelectorConfig;
 import com.luck.picture.lib.config.SelectMimeType;
 import com.luck.picture.lib.config.SelectModeConfig;
+import com.luck.picture.lib.config.SelectorProviders;
 import com.luck.picture.lib.config.VideoQuality;
 import com.luck.picture.lib.engine.CompressEngine;
 import com.luck.picture.lib.engine.CompressFileEngine;
@@ -68,12 +68,13 @@ import java.util.List;
  */
 
 public final class PictureSelectionModel {
-    private final PictureSelectionConfig selectionConfig;
+    private final SelectorConfig selectionConfig;
     private final PictureSelector selector;
 
     public PictureSelectionModel(PictureSelector selector, int chooseMode) {
         this.selector = selector;
-        selectionConfig = PictureSelectionConfig.getCleanInstance();
+        selectionConfig = new SelectorConfig();
+        SelectorProviders.getInstance().addSelectorConfigQueue(selectionConfig);
         selectionConfig.chooseMode = chooseMode;
         setMaxVideoSelectNum(selectionConfig.maxVideoSelectNum);
     }
@@ -94,7 +95,7 @@ public final class PictureSelectionModel {
      */
     public PictureSelectionModel setSelectorUIStyle(PictureSelectorStyle uiStyle) {
         if (uiStyle != null) {
-            PictureSelectionConfig.selectorStyle = uiStyle;
+            selectionConfig.selectorStyle = uiStyle;
         }
         return this;
     }
@@ -111,6 +112,17 @@ public final class PictureSelectionModel {
     }
 
     /**
+     * Set App default Language
+     *
+     * @param defaultLanguage default language {@link LanguageConfig}
+     * @return PictureSelectionModel
+     */
+    public PictureSelectionModel setDefaultLanguage(int defaultLanguage) {
+        selectionConfig.defaultLanguage = defaultLanguage;
+        return this;
+    }
+
+    /**
      * Image Load the engine
      *
      * @param engine Image Load the engine
@@ -120,7 +132,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setImageEngine(ImageEngine engine) {
-        PictureSelectionConfig.imageEngine = engine;
+        selectionConfig.imageEngine = engine;
         return this;
     }
 
@@ -133,7 +145,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setVideoPlayerEngine(VideoPlayerEngine engine) {
-        PictureSelectionConfig.videoPlayerEngine = engine;
+        selectionConfig.videoPlayerEngine = engine;
         return this;
     }
 
@@ -146,7 +158,7 @@ public final class PictureSelectionModel {
      */
     @Deprecated
     public PictureSelectionModel setCompressEngine(CompressEngine engine) {
-        PictureSelectionConfig.compressEngine = engine;
+        selectionConfig.compressEngine = engine;
         selectionConfig.isCompressEngine = true;
         return this;
     }
@@ -158,7 +170,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setCompressEngine(CompressFileEngine engine) {
-        PictureSelectionConfig.compressFileEngine = engine;
+        selectionConfig.compressFileEngine = engine;
         selectionConfig.isCompressEngine = true;
         return this;
     }
@@ -172,7 +184,7 @@ public final class PictureSelectionModel {
      */
     @Deprecated
     public PictureSelectionModel setCropEngine(CropEngine engine) {
-        PictureSelectionConfig.cropEngine = engine;
+        selectionConfig.cropEngine = engine;
         return this;
     }
 
@@ -184,7 +196,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setCropEngine(CropFileEngine engine) {
-        PictureSelectionConfig.cropFileEngine = engine;
+        selectionConfig.cropFileEngine = engine;
         return this;
     }
 
@@ -199,7 +211,7 @@ public final class PictureSelectionModel {
     @Deprecated
     public PictureSelectionModel setSandboxFileEngine(SandboxFileEngine engine) {
         if (SdkVersionUtils.isQ()) {
-            PictureSelectionConfig.sandboxFileEngine = engine;
+            selectionConfig.sandboxFileEngine = engine;
             selectionConfig.isSandboxFileEngine = true;
         } else {
             selectionConfig.isSandboxFileEngine = false;
@@ -215,7 +227,7 @@ public final class PictureSelectionModel {
      */
     public PictureSelectionModel setSandboxFileEngine(UriToFileTransformEngine engine) {
         if (SdkVersionUtils.isQ()) {
-            PictureSelectionConfig.uriToFileTransformEngine = engine;
+            selectionConfig.uriToFileTransformEngine = engine;
             selectionConfig.isSandboxFileEngine = true;
         } else {
             selectionConfig.isSandboxFileEngine = false;
@@ -238,7 +250,7 @@ public final class PictureSelectionModel {
      */
     @Deprecated
     public PictureSelectionModel setExtendLoaderEngine(ExtendLoaderEngine engine) {
-        PictureSelectionConfig.loaderDataEngine = engine;
+        selectionConfig.loaderDataEngine = engine;
         selectionConfig.isLoaderDataEngine = true;
         return this;
     }
@@ -254,7 +266,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setLoaderFactoryEngine(IBridgeLoaderFactory loaderFactory) {
-        PictureSelectionConfig.loaderFactory = loaderFactory;
+        selectionConfig.loaderFactory = loaderFactory;
         selectionConfig.isLoaderFactoryEngine = true;
         return this;
     }
@@ -267,7 +279,7 @@ public final class PictureSelectionModel {
      * }
      */
     public PictureSelectionModel setMagicalEffectInterpolator(InterpolatorFactory interpolatorFactory) {
-        PictureSelectionConfig.interpolatorFactory = interpolatorFactory;
+        selectionConfig.interpolatorFactory = interpolatorFactory;
         return this;
     }
 
@@ -278,7 +290,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setCameraInterceptListener(OnCameraInterceptListener listener) {
-        PictureSelectionConfig.onCameraInterceptListener = listener;
+        selectionConfig.onCameraInterceptListener = listener;
         return this;
     }
 
@@ -290,7 +302,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setRecordAudioInterceptListener(OnRecordAudioInterceptListener listener) {
-        PictureSelectionConfig.onRecordAudioListener = listener;
+        selectionConfig.onRecordAudioListener = listener;
         return this;
     }
 
@@ -302,7 +314,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setPreviewInterceptListener(OnPreviewInterceptListener listener) {
-        PictureSelectionConfig.onPreviewInterceptListener = listener;
+        selectionConfig.onPreviewInterceptListener = listener;
         return this;
     }
 
@@ -316,7 +328,7 @@ public final class PictureSelectionModel {
      */
     public PictureSelectionModel setInjectLayoutResourceListener(OnInjectLayoutResourceListener listener) {
         selectionConfig.isInjectLayoutResource = listener != null;
-        PictureSelectionConfig.onLayoutResourceListener = listener;
+        selectionConfig.onLayoutResourceListener = listener;
         return this;
     }
 
@@ -327,7 +339,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setEditMediaInterceptListener(OnMediaEditInterceptListener listener) {
-        PictureSelectionConfig.onEditMediaEventListener = listener;
+        selectionConfig.onEditMediaEventListener = listener;
         return this;
     }
 
@@ -338,7 +350,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setPermissionsInterceptListener(OnPermissionsInterceptListener listener) {
-        PictureSelectionConfig.onPermissionsEventListener = listener;
+        selectionConfig.onPermissionsEventListener = listener;
         return this;
     }
 
@@ -349,7 +361,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setPermissionDescriptionListener(OnPermissionDescriptionListener listener) {
-        PictureSelectionConfig.onPermissionDescriptionListener = listener;
+        selectionConfig.onPermissionDescriptionListener = listener;
         return this;
     }
 
@@ -360,7 +372,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setPermissionDeniedListener(OnPermissionDeniedListener listener) {
-        PictureSelectionConfig.onPermissionDeniedListener = listener;
+        selectionConfig.onPermissionDeniedListener = listener;
         return this;
     }
 
@@ -368,10 +380,9 @@ public final class PictureSelectionModel {
      * Custom limit tips
      *
      * @param listener
-     * @return
      */
     public PictureSelectionModel setSelectLimitTipsListener(OnSelectLimitTipsListener listener) {
-        PictureSelectionConfig.onSelectLimitTipsListener = listener;
+        selectionConfig.onSelectLimitTipsListener = listener;
         return this;
     }
 
@@ -382,7 +393,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setSelectFilterListener(OnSelectFilterListener listener) {
-        PictureSelectionConfig.onSelectFilterListener = listener;
+        selectionConfig.onSelectFilterListener = listener;
         return this;
     }
 
@@ -393,7 +404,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setQueryFilterListener(OnQueryFilterListener listener) {
-        PictureSelectionConfig.onQueryFilterListener = listener;
+        selectionConfig.onQueryFilterListener = listener;
         return this;
     }
 
@@ -404,7 +415,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setGridItemSelectAnimListener(OnGridItemSelectAnimListener listener) {
-        PictureSelectionConfig.onItemSelectAnimListener = listener;
+        selectionConfig.onItemSelectAnimListener = listener;
         return this;
     }
 
@@ -415,7 +426,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setSelectAnimListener(OnSelectAnimListener listener) {
-        PictureSelectionConfig.onSelectAnimListener = listener;
+        selectionConfig.onSelectAnimListener = listener;
         return this;
     }
 
@@ -427,7 +438,7 @@ public final class PictureSelectionModel {
      */
     public PictureSelectionModel setAddBitmapWatermarkListener(OnBitmapWatermarkEventListener listener) {
         if (selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
-            PictureSelectionConfig.onBitmapWatermarkListener = listener;
+            selectionConfig.onBitmapWatermarkListener = listener;
         }
         return this;
     }
@@ -440,7 +451,7 @@ public final class PictureSelectionModel {
      */
     public PictureSelectionModel setVideoThumbnailListener(OnVideoThumbnailEventListener listener) {
         if (selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
-            PictureSelectionConfig.onVideoThumbnailEventListener = listener;
+            selectionConfig.onVideoThumbnailEventListener = listener;
         }
         return this;
     }
@@ -452,7 +463,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setCustomLoadingListener(OnCustomLoadingListener listener) {
-        PictureSelectionConfig.onCustomLoadingListener = listener;
+        selectionConfig.onCustomLoadingListener = listener;
         return this;
     }
 
@@ -468,6 +479,28 @@ public final class PictureSelectionModel {
         return this;
     }
 
+    /**
+     * Android 10 preloads data first, then asynchronously obtains album list
+     * <p>
+     * Please consult the developer for detailed reasons
+     * </p>
+     *
+     * @param isPreloadFirst Enable preload by default
+     */
+    public PictureSelectionModel isPreloadFirst(boolean isPreloadFirst) {
+        selectionConfig.isPreloadFirst = isPreloadFirst;
+        return this;
+    }
+
+    /**
+     * Using the system player
+     *
+     * @param isUseSystemVideoPlayer
+     */
+    public PictureSelectionModel isUseSystemVideoPlayer(boolean isUseSystemVideoPlayer) {
+        selectionConfig.isUseSystemVideoPlayer = isUseSystemVideoPlayer;
+        return this;
+    }
 
     /**
      * Change the desired orientation of this activity.  If the activity
@@ -641,6 +674,7 @@ public final class PictureSelectionModel {
      * @param isFilterInvalidFile Whether to filter invalid files {@link Some of the query performance is consumed,Especially on the Q version}
      * @return
      */
+    @Deprecated
     public PictureSelectionModel isPageStrategy(boolean isPageStrategy, boolean isFilterInvalidFile) {
         selectionConfig.isPageStrategy = isPageStrategy;
         selectionConfig.isFilterInvalidFile = isFilterInvalidFile;
@@ -655,6 +689,7 @@ public final class PictureSelectionModel {
      * @param isFilterInvalidFile Whether to filter invalid files {@link Some of the query performance is consumed,Especially on the Q version}
      * @return
      */
+    @Deprecated
     public PictureSelectionModel isPageStrategy(boolean isPageStrategy, int pageSize, boolean isFilterInvalidFile) {
         selectionConfig.isPageStrategy = isPageStrategy;
         selectionConfig.pageSize = pageSize < PictureConfig.MIN_PAGE_SIZE ? PictureConfig.MAX_PAGE_SIZE : pageSize;
@@ -669,7 +704,7 @@ public final class PictureSelectionModel {
      * @return
      */
     public PictureSelectionModel setAttachViewLifecycle(IBridgeViewLifecycle viewLifecycle) {
-        PictureSelectionConfig.viewLifecycle = viewLifecycle;
+        selectionConfig.viewLifecycle = viewLifecycle;
         return this;
     }
 
@@ -942,11 +977,11 @@ public final class PictureSelectionModel {
      *
      * @param dir Camera out path
      *            <p>
-     *            Normally, it should be consistent with {@link PictureSelectionConfig.setOutputCameraDir()};
+     *            Normally, it should be consistent with {@link SelectorConfig.setOutputCameraDir()};
      *            </p>
      *
      *            <p>
-     *            If build.version.sdk_INT < 29,{@link PictureSelectionConfig.setQuerySandboxDir();}
+     *            If build.version.sdk_INT < 29,{@link SelectorConfig.setQuerySandboxDir();}
      *            Do not set the external storage path,
      *            which may cause the problem of picture duplication
      *            </p>
@@ -963,7 +998,7 @@ public final class PictureSelectionModel {
      * Only Display setQuerySandboxDir();  Source
      * <p/>
      *
-     * @param isOnlySandboxDir true or Only Display {@link PictureSelectionConfig.setQuerySandboxDir();}
+     * @param isOnlySandboxDir true or Only Display {@link SelectorConfig.setQuerySandboxDir();}
      * @return
      */
     public PictureSelectionModel isOnlyObtainSandboxDir(boolean isOnlySandboxDir) {
@@ -1143,11 +1178,22 @@ public final class PictureSelectionModel {
     /**
      * It is forbidden to correct or synchronize the width and height of the video
      *
-     * @param isEnableVideoSize
+     * @param isEnableVideoSize Use {@link .isSyncWidthAndHeight()}
+     */
+    @Deprecated
+    public PictureSelectionModel isEnableVideoSize(boolean isEnableVideoSize) {
+        selectionConfig.isSyncWidthAndHeight = isEnableVideoSize;
+        return this;
+    }
+
+    /**
+     * It is forbidden to correct or synchronize the width and height of the video
+     *
+     * @param isSyncWidthAndHeight
      * @return
      */
-    public PictureSelectionModel isEnableVideoSize(boolean isEnableVideoSize) {
-        selectionConfig.isEnableVideoSize = isEnableVideoSize;
+    public PictureSelectionModel isSyncWidthAndHeight(boolean isSyncWidthAndHeight) {
+        selectionConfig.isSyncWidthAndHeight = isSyncWidthAndHeight;
         return this;
     }
 
@@ -1303,9 +1349,9 @@ public final class PictureSelectionModel {
             return this;
         }
         if (selectionConfig.selectionMode == SelectModeConfig.SINGLE && selectionConfig.isDirectReturnSingle) {
-            SelectedManager.clearSelectResult();
+            selectionConfig.selectedResult.clear();
         } else {
-            SelectedManager.addAllSelectResult(new ArrayList<>(selectedList));
+            selectionConfig.addAllSelectResult(new ArrayList<>(selectedList));
         }
         return this;
     }
@@ -1339,13 +1385,13 @@ public final class PictureSelectionModel {
             // 绑定回调监听
             selectionConfig.isResultListenerBack = true;
             selectionConfig.isActivityResultBack = false;
-            PictureSelectionConfig.onResultCallListener = call;
-            if (PictureSelectionConfig.imageEngine == null && selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
+            selectionConfig.onResultCallListener = call;
+            if (selectionConfig.imageEngine == null && selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
                 throw new NullPointerException("imageEngine is null,Please implement ImageEngine");
             }
             Intent intent = new Intent(activity, PictureSelectorSupporterActivity.class);
             activity.startActivity(intent);
-            PictureWindowAnimationStyle windowAnimationStyle = PictureSelectionConfig.selectorStyle.getWindowAnimationStyle();
+            PictureWindowAnimationStyle windowAnimationStyle = selectionConfig.selectorStyle.getWindowAnimationStyle();
             activity.overridePendingTransition(windowAnimationStyle.activityEnterAnimation, R.anim.ps_anim_fade_in);
         }
     }
@@ -1364,7 +1410,7 @@ public final class PictureSelectionModel {
             }
             selectionConfig.isResultListenerBack = false;
             selectionConfig.isActivityResultBack = true;
-            if (PictureSelectionConfig.imageEngine == null && selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
+            if (selectionConfig.imageEngine == null && selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
                 throw new NullPointerException("imageEngine is null,Please implement ImageEngine");
             }
             Intent intent = new Intent(activity, PictureSelectorSupporterActivity.class);
@@ -1374,7 +1420,7 @@ public final class PictureSelectionModel {
             } else {
                 activity.startActivityForResult(intent, requestCode);
             }
-            PictureWindowAnimationStyle windowAnimationStyle = PictureSelectionConfig.selectorStyle.getWindowAnimationStyle();
+            PictureWindowAnimationStyle windowAnimationStyle = selectionConfig.selectorStyle.getWindowAnimationStyle();
             activity.overridePendingTransition(windowAnimationStyle.activityEnterAnimation, R.anim.ps_anim_fade_in);
         }
     }
@@ -1396,12 +1442,12 @@ public final class PictureSelectionModel {
             }
             selectionConfig.isResultListenerBack = false;
             selectionConfig.isActivityResultBack = true;
-            if (PictureSelectionConfig.imageEngine == null && selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
+            if (selectionConfig.imageEngine == null && selectionConfig.chooseMode != SelectMimeType.ofAudio()) {
                 throw new NullPointerException("imageEngine is null,Please implement ImageEngine");
             }
             Intent intent = new Intent(activity, PictureSelectorSupporterActivity.class);
             launcher.launch(intent);
-            PictureWindowAnimationStyle windowAnimationStyle = PictureSelectionConfig.selectorStyle.getWindowAnimationStyle();
+            PictureWindowAnimationStyle windowAnimationStyle = selectionConfig.selectorStyle.getWindowAnimationStyle();
             activity.overridePendingTransition(windowAnimationStyle.activityEnterAnimation, R.anim.ps_anim_fade_in);
         }
     }
@@ -1425,7 +1471,7 @@ public final class PictureSelectionModel {
         // 绑定回调监听
         selectionConfig.isResultListenerBack = false;
         selectionConfig.isActivityResultBack = true;
-        PictureSelectionConfig.onResultCallListener = null;
+        selectionConfig.onResultCallListener = null;
         return new PictureSelectorFragment();
     }
 
@@ -1446,11 +1492,9 @@ public final class PictureSelectionModel {
         // 绑定回调监听
         selectionConfig.isResultListenerBack = true;
         selectionConfig.isActivityResultBack = false;
-        PictureSelectionConfig.onResultCallListener = call;
+        selectionConfig.onResultCallListener = call;
         FragmentManager fragmentManager = null;
-        if (activity instanceof AppCompatActivity) {
-            fragmentManager = ((AppCompatActivity) activity).getSupportFragmentManager();
-        } else if (activity instanceof FragmentActivity) {
+        if (activity instanceof FragmentActivity) {
             fragmentManager = ((FragmentActivity) activity).getSupportFragmentManager();
         }
         if (fragmentManager == null) {

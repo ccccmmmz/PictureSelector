@@ -7,7 +7,7 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 
 import com.luck.picture.lib.config.PictureMimeType;
-import com.luck.picture.lib.config.PictureSelectionConfig;
+import com.luck.picture.lib.config.SelectorConfig;
 import com.luck.picture.lib.config.SelectMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
 import com.luck.picture.lib.entity.LocalMediaFolder;
@@ -31,22 +31,18 @@ public abstract class IBridgeMediaLoader {
     protected static final String ORDER_BY = MediaStore.MediaColumns.DATE_MODIFIED + " DESC";
     protected static final String NOT_GIF = " AND (" + MediaStore.MediaColumns.MIME_TYPE + "!='image/gif')";
     protected static final String GROUP_BY_BUCKET_Id = " GROUP BY (bucket_id";
+    protected static final String DISTINCT_BUCKET_Id = "DISTINCT bucket_id";
     protected static final String COLUMN_COUNT = "count";
     protected static final String COLUMN_BUCKET_ID = "bucket_id";
     protected static final String COLUMN_DURATION = "duration";
     protected static final String COLUMN_BUCKET_DISPLAY_NAME = "bucket_display_name";
     protected static final String COLUMN_ORIENTATION = "orientation";
     protected static final int MAX_SORT_SIZE = 60;
-    private Context mContext;
-    private PictureSelectionConfig mConfig;
+    private final Context mContext;
+    protected final SelectorConfig mConfig;
 
-    /**
-     * init config
-     *
-     * @param context
-     * @param config  {@link PictureSelectionConfig}
-     */
-    public void initConfig(Context context, PictureSelectionConfig config) {
+    public IBridgeMediaLoader(Context context, SelectorConfig config) {
+        super();
         this.mContext = context;
         this.mConfig = config;
     }
@@ -55,7 +51,7 @@ public abstract class IBridgeMediaLoader {
         return mContext;
     }
 
-    protected PictureSelectionConfig getConfig() {
+    protected SelectorConfig getConfig() {
         return mConfig;
     }
 
@@ -100,7 +96,6 @@ public abstract class IBridgeMediaLoader {
      * @param bucketId
      */
     public abstract String getAlbumFirstCover(long bucketId);
-
 
     /**
      * query album list

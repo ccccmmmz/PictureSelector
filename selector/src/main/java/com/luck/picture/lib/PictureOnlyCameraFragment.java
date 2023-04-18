@@ -1,5 +1,6 @@
 package com.luck.picture.lib;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,7 +10,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.luck.picture.lib.basic.PictureCommonFragment;
-import com.luck.picture.lib.config.PictureSelectionConfig;
 import com.luck.picture.lib.entity.LocalMedia;
 import com.luck.picture.lib.manager.SelectedManager;
 import com.luck.picture.lib.permissions.PermissionChecker;
@@ -49,18 +49,18 @@ public class PictureOnlyCameraFragment extends PictureCommonFragment {
             if (SdkVersionUtils.isQ()) {
                 openSelectedCamera();
             } else {
-                PermissionChecker.getInstance().requestPermissions(this,
-                        PermissionConfig.WRITE_EXTERNAL_STORAGE, new PermissionResultCallback() {
-                            @Override
-                            public void onGranted() {
-                                openSelectedCamera();
-                            }
+                String[] writePermissionArray = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE};
+                PermissionChecker.getInstance().requestPermissions(this, writePermissionArray, new PermissionResultCallback() {
+                    @Override
+                    public void onGranted() {
+                        openSelectedCamera();
+                    }
 
-                            @Override
-                            public void onDenied() {
-                                handlePermissionDenied(PermissionConfig.WRITE_EXTERNAL_STORAGE);
-                            }
-                        });
+                    @Override
+                    public void onDenied() {
+                        handlePermissionDenied(writePermissionArray);
+                    }
+                });
             }
         }
     }
@@ -87,14 +87,14 @@ public class PictureOnlyCameraFragment extends PictureCommonFragment {
     public void handlePermissionSettingResult(String[] permissions) {
         onPermissionExplainEvent(false, null);
         boolean isHasPermissions;
-        if (PictureSelectionConfig.onPermissionsEventListener != null) {
-            isHasPermissions = PictureSelectionConfig.onPermissionsEventListener
+        if (selectorConfig.onPermissionsEventListener != null) {
+            isHasPermissions = selectorConfig.onPermissionsEventListener
                     .hasPermissions(this, permissions);
         } else {
             isHasPermissions = PermissionChecker.isCheckCamera(getContext());
             if (SdkVersionUtils.isQ()) {
             } else {
-                isHasPermissions = PermissionChecker.isCheckWriteStorage(getContext());
+                isHasPermissions = PermissionChecker.isCheckWriteExternalStorage(getContext());
             }
         }
         if (isHasPermissions) {
@@ -103,7 +103,7 @@ public class PictureOnlyCameraFragment extends PictureCommonFragment {
             if (!PermissionChecker.isCheckCamera(getContext())) {
                 ToastUtils.showToast(getContext(), getString(R.string.ps_camera));
             } else {
-                if (!PermissionChecker.isCheckWriteStorage(getContext())) {
+                if (!PermissionChecker.isCheckWriteExternalStorage(getContext())) {
                     ToastUtils.showToast(getContext(), getString(R.string.ps_jurisdiction));
                 }
             }
